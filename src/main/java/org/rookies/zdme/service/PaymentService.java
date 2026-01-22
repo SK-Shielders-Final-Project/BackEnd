@@ -1,6 +1,5 @@
 package org.rookies.zdme.service;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,7 @@ public class PaymentService {
     @Value("${toss.secret-key}")
     private String tossSecretKey;
 
+    // toss로 결제 요청 및 승인
     public Payment tossPaymentConfirm(PaymentSuccessDto dto) {
 
         RestTemplate restTemplate = new RestTemplate();
@@ -79,5 +79,14 @@ public class PaymentService {
         } catch (Exception e) {
             throw new RuntimeException("토스 결제 승인 실패: " + e.getMessage());
         }
+    }
+
+    public List<Payment> getPayments() {
+        // userId를 1로 고정 -> 추후에 jwt 기반으로 변경할 예정
+        Long userId = 1L;
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+
+        return paymentRepository.findAllByUser(user);
     }
 }

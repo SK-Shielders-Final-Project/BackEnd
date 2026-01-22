@@ -6,21 +6,19 @@ import org.rookies.zdme.model.dto.PaymentSuccessDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.service.PaymentService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/user/payments")
+@RequestMapping("/api/payments")
 @RequiredArgsConstructor
 public class PaymentController {
 
     private final PaymentService paymentService;
 
-    @PostMapping("/confirm")
+    @PostMapping("/user/confirm")
     public ResponseEntity<?> confirmPayment(@RequestBody PaymentSuccessDto dto) {
         try {
             Payment payment = paymentService.tossPaymentConfirm(dto);
@@ -35,5 +33,12 @@ public class PaymentController {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", e.getMessage()));
         }
+    }
+
+    @GetMapping("/user")
+    public ResponseEntity<?> getMyPayments() {
+        List<Payment> payments = paymentService.getPayments();
+
+        return ResponseEntity.ok(payments);
     }
 }
