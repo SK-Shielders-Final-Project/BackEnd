@@ -1,10 +1,12 @@
 package org.rookies.zdme.controller.api;
 
+import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.LoginRequest;
 import org.rookies.zdme.dto.LoginResponse;
+import org.rookies.zdme.dto.SignupResponse;
+import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.security.JwtUtil;
 import org.rookies.zdme.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -14,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
 
@@ -22,16 +25,29 @@ import java.util.Objects;
  */
 @RestController
 @RequestMapping("/api/user")
+@RequiredArgsConstructor
 public class UserAPIController {
 
-    @Autowired
-    private UserService userService;
+    private final UserService userService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
-
-    @Autowired
-    private JwtUtil jwtUtil;
+    /**
+     * 회원가입 (대량 할당 및 SQL 인젝션 등 취약점을 포함)
+     * @param requestData
+     * @return
+     */
+    @PostMapping("/auth/signup")
+    public ResponseEntity<?> vulnerableSignup(@RequestBody Map<String, Object> requestData) {
+        try {
+            User newUser = userService.vulnerableSignup(requestData);
+            return ResponseEntity.ok(SignupResponse.fromEntity(newUser));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Collections.singletonMap("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "회원가입 처리 중 심각한 오류가 발생했습니다."));
+        }
+    }
 
     /**
      * 일반 사용자 jwt 로그인

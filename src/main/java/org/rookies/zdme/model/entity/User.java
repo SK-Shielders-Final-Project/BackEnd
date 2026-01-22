@@ -1,6 +1,8 @@
 package org.rookies.zdme.model.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
@@ -14,7 +16,9 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 @Getter
+@Builder
 @NoArgsConstructor
+@AllArgsConstructor
 public class User implements UserDetails {
 
     @Id
@@ -53,46 +57,6 @@ public class User implements UserDetails {
 
     @Column
     private LocalDateTime updatedAt;
-
-    public Long getUserId() {
-        return userId;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPhone() {
-        return phone;
-    }
-
-    public String getCardNumber() {
-        return cardNumber;
-    }
-
-    public Integer getTotalPoint() {
-        return totalPoint;
-    }
-
-    public String getPass() {
-        return pass;
-    }
-
-    public Integer getAdminLevel() {
-        return adminLevel;
-    }
-
-    public LocalDateTime getCreatedAt() {
-        return createdAt;
-    }
-
-    public LocalDateTime getUpdatedAt() {
-        return updatedAt;
-    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
