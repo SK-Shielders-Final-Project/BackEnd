@@ -1,10 +1,14 @@
 package org.rookies.zdme.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentSuccessDto;
 import org.rookies.zdme.model.entity.Payment;
+import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.PaymentRepository;
+import org.rookies.zdme.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -18,34 +22,31 @@ import java.util.*;
 @RequiredArgsConstructor
 public class PaymentService {
 
+    private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
     private final PaymentRepository paymentRepository;
 
     @Value("${toss.secret-key}")
     private String tossSecretKey;
 
     public Payment tossPaymentConfirm(PaymentSuccessDto dto) {
-        Payment payment = paymentRepository.findByOrderId(dto.getOrderId())
-                .orElseThrow(() -> new RuntimeException("주문 정보를 찾을 수 없습니다."));
-
-        if (!payment.getAmount().equals(dto.getAmount())) {
-            throw new RuntimeException("결제 금액이 일치하지 않습니다.");
-        }
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
 
+        // 인증 헤더 설정
         String encodedAuth = Base64.getEncoder()
                 .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
-        headers.setBasicAuth(encodedAuth);
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        headers.set("Authorization", "Basic " + encodedAuth);
 
         Map<String, Object> params = new HashMap<>();
         params.put("paymentKey", dto.getPaymentKey());
         params.put("orderId", dto.getOrderId());
         params.put("amount", dto.getAmount());
 
-        HttpEntity<String> requestEntity = new HttpEntity<>(params.toString(), headers);
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(params, headers);
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
@@ -54,8 +55,27 @@ public class PaymentService {
                     requestEntity,
                     String.class
             );
-            payment.confirmPaymentSuccess(dto.getPaymentKey(), "카드");
-            return payment;
+
+            // 시큐어 코딩 버전 (토스에서 넘어온 response 값을 기준으로 payment 생성)
+//            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+//            String approvedId = jsonNode.get("orderId").asText();
+//            String approvedKey = jsonNode.get("paymentKey").asText();
+//            Long approvedAmount = jsonNode.get("totalAmount").asLong();
+
+            User user = userRepository.findById(dto.getUserId())
+                    .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+
+            Payment payment = Payment.builder()
+                    .user(user)
+                    .orderId(dto.getOrderId())
+                    .amount(dto.getAmount())
+                    .paymentKey(dto.getPaymentKey())
+                    .paymentStatus(Payment.PaymentStatus.DONE)
+                    .paymentMethod("카드")
+                    .build();
+
+            return paymentRepository.save(payment);
+
         } catch (Exception e) {
             throw new RuntimeException("토스 결제 승인 실패: " + e.getMessage());
         }

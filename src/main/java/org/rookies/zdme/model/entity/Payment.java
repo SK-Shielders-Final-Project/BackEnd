@@ -1,10 +1,10 @@
 package org.rookies.zdme.model.entity;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.rookies.zdme.model.entity.User;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -15,6 +15,8 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor
 @EntityListeners(AuditingEntityListener.class)
+@Builder
+@AllArgsConstructor
 public class Payment {
 
     @Id
@@ -47,19 +49,5 @@ public class Payment {
 
     public enum PaymentStatus{
         READY, DONE, CANCELED, ABORTED
-    }
-
-    @Builder
-    public Payment(User user, String orderId, Long amount) {
-        this.user = user;
-        this.orderId = orderId;
-        this.amount = amount;
-        this.paymentStatus = PaymentStatus.READY;
-    }
-
-    public void confirmPaymentSuccess(String paymentKey, String paymentMethod){
-        this.paymentKey = paymentKey;
-        this.paymentStatus = PaymentStatus.DONE;
-        this.paymentMethod = paymentMethod;
     }
 }
