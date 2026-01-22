@@ -50,4 +50,8 @@ public class Payment {
     public enum PaymentStatus{
         READY, DONE, CANCELED, ABORTED
     }
+
+    public void cancelPayment() {
+        this.paymentStatus = PaymentStatus.CANCELED;
+    }
 }

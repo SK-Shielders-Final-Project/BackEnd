@@ -3,6 +3,7 @@ package org.rookies.zdme.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.rookies.zdme.model.dto.PaymentCancelDto;
 import org.rookies.zdme.model.dto.PaymentSuccessDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.model.entity.User;
@@ -81,6 +82,7 @@ public class PaymentService {
         }
     }
 
+    // 결제 내역 확인
     public List<Payment> getPayments() {
         // userId를 1로 고정 -> 추후에 jwt 기반으로 변경할 예정
         Long userId = 1L;
@@ -88,5 +90,45 @@ public class PaymentService {
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         return paymentRepository.findAllByUser(user);
+    }
+
+    // 환불
+    public Payment cancelPayment(PaymentCancelDto dto) {
+
+        System.out.println("=========================================");
+        System.out.println("요청 받은 키: [" + dto.getPaymentKey() + "]");
+        System.out.println("=========================================");
+
+        Payment payment = paymentRepository.findByPaymentKey(dto.getPaymentKey())
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 결제 내역입니다."));
+
+        if (payment.getPaymentStatus() == Payment.PaymentStatus.CANCELED) {
+            throw new RuntimeException("이미 취소된 결제입니다.");
+        }
+
+        RestTemplate restTemplate = new RestTemplate();
+        HttpHeaders headers = new HttpHeaders();
+
+        String encodedAuth = Base64.getEncoder()
+                .encodeToString((tossSecretKey + ":").getBytes(StandardCharsets.UTF_8));
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+        headers.set("Authorization", "Basic " + encodedAuth);
+
+        Map<String, Object> params = new HashMap<>();
+        params.put("cancelReason", dto.getCancelReason());
+
+        HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(params, headers);
+
+        try {
+            String url = "https://api.tosspayments.com/v1/payments/" + dto.getPaymentKey() + "/cancel";
+
+            restTemplate.postForEntity(url, requestEntity, String.class);
+
+            payment.cancelPayment();
+            return paymentRepository.save(payment);
+        } catch (Exception e) {
+            throw new RuntimeException("환불 실패: " + e.getMessage());
+        }
     }
 }
