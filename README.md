@@ -26,6 +26,9 @@ CREATE USER zdme IDENTIFIED BY zdme;
 GRANT CONNECT, RESOURCE TO zdme;
 ALTER USER zdme QUOTA UNLIMITED ON USERS;
 ```
-### 2. application.properties 설정
+### 2 .jdk 설치 및 프로젝트 설정
+
+
+### 3. application.properties 설정
 본인 환경에 맞춰서 수정이 필요할 시 해당 파일 수정하여 database 설정
 
