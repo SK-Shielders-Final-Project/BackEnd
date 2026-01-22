@@ -1,6 +1,7 @@
 package org.rookies.zdme.model.entity;
 
 import jakarta.persistence.*;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.rookies.zdme.model.entity.User;
@@ -28,7 +29,7 @@ public class Payment {
     private String orderId;
 
     @Column(nullable = false)
-    private Integer amount;
+    private Long amount;
 
     @Column(length = 20)
     private PaymentStatus paymentStatus;
@@ -46,5 +47,19 @@ public class Payment {
 
     public enum PaymentStatus{
         READY, DONE, CANCELED, ABORTED
+    }
+
+    @Builder
+    public Payment(User user, String orderId, Long amount) {
+        this.user = user;
+        this.orderId = orderId;
+        this.amount = amount;
+        this.paymentStatus = PaymentStatus.READY;
+    }
+
+    public void confirmPaymentSuccess(String paymentKey, String paymentMethod){
+        this.paymentKey = paymentKey;
+        this.paymentStatus = PaymentStatus.DONE;
+        this.paymentMethod = paymentMethod;
     }
 }
