@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.rookies.zdme.model.entity.User;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDateTime;
 
@@ -11,6 +13,7 @@ import java.time.LocalDateTime;
 @Table(name = "payments")
 @Getter
 @NoArgsConstructor
+@EntityListeners(AuditingEntityListener.class)
 public class Payment {
 
     @Id
@@ -21,18 +24,27 @@ public class Payment {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(length = 100)
+    private String orderId;
+
     @Column(nullable = false)
     private Integer amount;
 
     @Column(length = 20)
-    private String paymentStatus;
+    private PaymentStatus paymentStatus;
 
     @Column(length = 50)
     private String paymentMethod;
 
+    // toss 발급 결제 고유 키
     @Column(length = 100)
-    private String transactionId;
+    private String paymentKey;
 
-    @Column
+    @CreatedDate
+    @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+
+    public enum PaymentStatus{
+        READY, DONE, CANCELED, ABORTED
+    }
 }
