@@ -1,6 +1,7 @@
 package org.rookies.zdme.service;
 
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentSuccessDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.repository.PaymentRepository;
@@ -14,6 +15,7 @@ import java.util.*;
 
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
@@ -21,11 +23,7 @@ public class PaymentService {
     @Value("${toss.secret-key}")
     private String tossSecretKey;
 
-    public PaymentService(PaymentRepository paymentRepository) {
-        this.paymentRepository = paymentRepository;
-    }
-
-    public void tossPaymentConfirm(PaymentSuccessDto dto) {
+    public Payment tossPaymentConfirm(PaymentSuccessDto dto) {
         Payment payment = paymentRepository.findByOrderId(dto.getOrderId())
                 .orElseThrow(() -> new RuntimeException("주문 정보를 찾을 수 없습니다."));
 
@@ -57,6 +55,7 @@ public class PaymentService {
                     String.class
             );
             payment.confirmPaymentSuccess(dto.getPaymentKey(), "카드");
+            return payment;
         } catch (Exception e) {
             throw new RuntimeException("토스 결제 승인 실패: " + e.getMessage());
         }
