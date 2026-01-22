@@ -20,6 +20,7 @@ public class PaymentController {
 
     private final PaymentService paymentService;
 
+    // 결제 요청 (사용자)
     @PostMapping("/user/confirm")
     public ResponseEntity<?> confirmPayment(@RequestBody PaymentSuccessDto dto) {
         try {
@@ -37,6 +38,7 @@ public class PaymentController {
         }
     }
 
+    // 내 결제 내역 조회 (사용자)
     @GetMapping("/user")
     public ResponseEntity<?> getMyPayments() {
         List<Payment> payments = paymentService.getPayments();
@@ -44,6 +46,7 @@ public class PaymentController {
         return ResponseEntity.ok(payments);
     }
 
+    // 결제 취소 (관리자)
     @PostMapping("/admin/cancel")
     public ResponseEntity<?> cancelPayment(@RequestBody PaymentCancelDto dto) {
         Payment canceledPayment = paymentService.cancelPayment(dto);
@@ -53,7 +56,7 @@ public class PaymentController {
         response.put("orderId", canceledPayment.getOrderId());
         response.put("status", canceledPayment.getPaymentStatus());
         response.put("canceledAmount", canceledPayment.getAmount());
-        
+
         return ResponseEntity.ok(response);
     }
 }

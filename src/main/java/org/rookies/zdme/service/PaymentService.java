@@ -42,6 +42,7 @@ public class PaymentService {
         headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
         headers.set("Authorization", "Basic " + encodedAuth);
 
+        // toss로 보낼 request 값 생성
         Map<String, Object> params = new HashMap<>();
         params.put("paymentKey", dto.getPaymentKey());
         params.put("orderId", dto.getOrderId());
@@ -50,6 +51,7 @@ public class PaymentService {
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(params, headers);
 
         try {
+            // toss 결제 요청 request 전송
             ResponseEntity<String> response = restTemplate.exchange(
                     "https://api.tosspayments.com/v1/payments/confirm",
                     HttpMethod.POST,
@@ -63,9 +65,11 @@ public class PaymentService {
 //            String approvedKey = jsonNode.get("paymentKey").asText();
 //            Long approvedAmount = jsonNode.get("totalAmount").asLong();
 
+            // 유효한 user id 인지 확인 후 user 불러오기
             User user = userRepository.findById(dto.getUserId())
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
+            // 사용자가 입력한 정보를 바탕으로 payment 객체 생성 (취약점 존재)
             Payment payment = Payment.builder()
                     .user(user)
                     .orderId(dto.getOrderId())
@@ -75,6 +79,7 @@ public class PaymentService {
                     .paymentMethod("카드")
                     .build();
 
+            // DB 내용 저장
             return paymentRepository.save(payment);
 
         } catch (Exception e) {
@@ -94,14 +99,12 @@ public class PaymentService {
 
     // 환불
     public Payment cancelPayment(PaymentCancelDto dto) {
-
-        System.out.println("=========================================");
-        System.out.println("요청 받은 키: [" + dto.getPaymentKey() + "]");
-        System.out.println("=========================================");
-
+        // 유효한 PaymentKey 인지 확인 후 해당 결제 내역 불러오기
+        // toss payments에서 PaymentKey를 기반으로 결제를 취소함
         Payment payment = paymentRepository.findByPaymentKey(dto.getPaymentKey())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 결제 내역입니다."));
 
+        // 결제 상태가 취소인 경우
         if (payment.getPaymentStatus() == Payment.PaymentStatus.CANCELED) {
             throw new RuntimeException("이미 취소된 결제입니다.");
         }
