@@ -185,6 +185,20 @@ public class UserService implements UserDetailsService {
         return passwordEncoder.matches(rawPassword, user.getPassword());
     }
 
+    @Transactional
+    public User changePassword(String username, String currentPassword, String newPassword) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new BadCredentialsException("Invalid current password");
+        }
+
+        user.changePassword(passwordEncoder.encode(newPassword));
+        
+        return userRepository.save(user);
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)

@@ -58,6 +58,11 @@ public class User implements UserDetails {
     @Column
     private LocalDateTime updatedAt;
 
+    public void changePassword(String encodedPassword) {
+        this.password = encodedPassword;
+        this.updatedAt = LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.adminLevel != null) {

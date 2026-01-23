@@ -1,11 +1,7 @@
 package org.rookies.zdme.controller.api;
 
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.dto.LoginRequest;
-import org.rookies.zdme.dto.LoginResponse;
-import org.rookies.zdme.dto.SignupResponse;
-import org.rookies.zdme.dto.VerifyPasswordRequest;
-import org.rookies.zdme.dto.VerifyPasswordResponse;
+import org.rookies.zdme.dto.*;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.security.JwtUtil;
 import org.rookies.zdme.service.UserService;
@@ -96,6 +92,16 @@ public class UserAPIController {
         } else {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
+    }
+
+    @PutMapping("/auth/changepw")
+    public ResponseEntity<UserUpdateResponse> changePassword(Principal principal, @RequestBody ChangePasswordRequest request) {
+        User updatedUser = userService.changePassword(
+                principal.getName(),
+                request.getCurrent_password(),
+                request.getNew_password()
+        );
+        return ResponseEntity.ok(UserUpdateResponse.fromEntity(updatedUser));
     }
 
     /**
