@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentCancelDto;
 import org.rookies.zdme.model.dto.PaymentRequestDto;
 import org.rookies.zdme.model.dto.PaymentResponseDto;
+import org.rookies.zdme.model.dto.PaymentsDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.PaymentRepository;
@@ -17,6 +18,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -96,13 +98,24 @@ public class PaymentService {
     }
 
     // 결제 내역 확인
-    public List<Payment> getPayments() {
+    public List<PaymentsDto> getPayments() {
         // userId를 고정 -> 추후에 jwt 기반으로 변경할 예정
         Long userId = 3L;
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
-        return paymentRepository.findAllByUser(user);
+        List<Payment> payments = paymentRepository.findAllByUser(user);
+
+        return payments.stream()
+                .map(p -> PaymentsDto.builder()
+                        .orderId(p.getOrderId())
+                        .paymentKey(p.getPaymentKey())
+                        .paymentMethod(p.getPaymentMethod())
+                        .createAt(p.getCreatedAt())
+                        .amount(p.getAmount())
+                        .userId(p.getUser().getUserId())
+                        .build())
+                .collect(Collectors.toList());
     }
 
     // 환불

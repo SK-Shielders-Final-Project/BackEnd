@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentCancelDto;
 import org.rookies.zdme.model.dto.PaymentRequestDto;
 import org.rookies.zdme.model.dto.PaymentResponseDto;
+import org.rookies.zdme.model.dto.PaymentsDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.service.PaymentService;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +37,7 @@ public class PaymentController {
     // 내 결제 내역 조회 (사용자)
     @GetMapping("/user")
     public ResponseEntity<?> getMyPayments() {
-        List<Payment> payments = paymentService.getPayments();
+        List<PaymentsDto> payments = paymentService.getPayments();
 
         return ResponseEntity.ok(payments);
     }
