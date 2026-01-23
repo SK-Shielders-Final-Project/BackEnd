@@ -35,7 +35,7 @@ public class User {
     private String cardNumber;
 
     @Column
-    private Integer totalPoint;
+    private Long totalPoint;
 
     @Column(length = 100)
     private String pass;
@@ -48,4 +48,8 @@ public class User {
 
     @Column
     private LocalDateTime updatedAt;
+
+    public void updatePoint(Long amount) {
+        this.totalPoint += amount;
+    }
 }

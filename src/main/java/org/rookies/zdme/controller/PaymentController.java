@@ -1,9 +1,9 @@
 package org.rookies.zdme.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.connector.Response;
 import org.rookies.zdme.model.dto.PaymentCancelDto;
-import org.rookies.zdme.model.dto.PaymentSuccessDto;
+import org.rookies.zdme.model.dto.PaymentRequestDto;
+import org.rookies.zdme.model.dto.PaymentResponseDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.service.PaymentService;
 import org.springframework.http.ResponseEntity;
@@ -22,16 +22,11 @@ public class PaymentController {
 
     // 결제 요청 (사용자)
     @PostMapping("/user/confirm")
-    public ResponseEntity<?> confirmPayment(@RequestBody PaymentSuccessDto dto) {
+    public ResponseEntity<?> confirmPayment(@RequestBody PaymentRequestDto reqDto) {
         try {
-            Payment payment = paymentService.tossPaymentConfirm(dto);
+            PaymentResponseDto resDto = paymentService.tossPaymentConfirm(reqDto);
 
-            return ResponseEntity.ok()
-                    .body(Map.of(
-                            "message", "결제가 정상적으로 승인되었습니다.",
-                            "orderId", payment.getOrderId(),
-                            "status", payment.getPaymentStatus()
-                    ));
+            return ResponseEntity.ok().body(resDto);
         } catch (Exception e) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", e.getMessage()));

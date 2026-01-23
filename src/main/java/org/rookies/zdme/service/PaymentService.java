@@ -4,7 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentCancelDto;
-import org.rookies.zdme.model.dto.PaymentSuccessDto;
+import org.rookies.zdme.model.dto.PaymentRequestDto;
+import org.rookies.zdme.model.dto.PaymentResponseDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.PaymentRepository;
@@ -30,7 +31,7 @@ public class PaymentService {
     private String tossSecretKey;
 
     // toss로 결제 요청 및 승인
-    public Payment tossPaymentConfirm(PaymentSuccessDto dto) {
+    public PaymentResponseDto tossPaymentConfirm(PaymentRequestDto dto) {
 
         RestTemplate restTemplate = new RestTemplate();
         HttpHeaders headers = new HttpHeaders();
@@ -78,10 +79,17 @@ public class PaymentService {
                     .paymentStatus(Payment.PaymentStatus.DONE)
                     .paymentMethod("카드")
                     .build();
+            user.updatePoint(dto.getAmount());
 
             // DB 내용 저장
-            return paymentRepository.save(payment);
+            paymentRepository.save(payment);
 
+            return PaymentResponseDto.builder()
+                    .paymentId(payment.getPaymentId())
+                    .userId(user.getUserId())
+                    .totalPoint(user.getTotalPoint())
+                    .paymentKey(payment.getPaymentKey())
+                    .build();
         } catch (Exception e) {
             throw new RuntimeException("토스 결제 승인 실패: " + e.getMessage());
         }
