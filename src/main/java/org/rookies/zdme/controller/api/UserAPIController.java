@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.LoginRequest;
 import org.rookies.zdme.dto.LoginResponse;
 import org.rookies.zdme.dto.SignupResponse;
+import org.rookies.zdme.dto.VerifyPasswordRequest;
+import org.rookies.zdme.dto.VerifyPasswordResponse;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.security.JwtUtil;
 import org.rookies.zdme.service.UserService;
@@ -16,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -82,6 +85,16 @@ public class UserAPIController {
             return new ResponseEntity<>(userInfo, HttpStatus.OK);
         } catch (RuntimeException e) {
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
+    }
+
+    @PostMapping("/verify-password")
+    public ResponseEntity<?> verifyPassword(Principal principal, @RequestBody VerifyPasswordRequest request) {
+        boolean success = userService.verifyPassword(principal.getName(), request.getPassword());
+        if (success) {
+            return ResponseEntity.ok(new VerifyPasswordResponse("success"));
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
     }
 

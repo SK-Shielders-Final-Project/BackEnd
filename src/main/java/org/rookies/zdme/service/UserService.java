@@ -179,6 +179,12 @@ public class UserService implements UserDetailsService {
         return userInfo;
     }
 
+    public boolean verifyPassword(String username, String rawPassword) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+        return passwordEncoder.matches(rawPassword, user.getPassword());
+    }
+
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         return userRepository.findByUsername(username)
