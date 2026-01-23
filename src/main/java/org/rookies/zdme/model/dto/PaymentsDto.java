@@ -8,7 +8,8 @@ import java.time.LocalDateTime;
 public class PaymentsDto {
     private Long userId;
     private Long amount;
-    private Integer adminLev;
+    private Long orderId;
+    private String paymentKey;
     private String paymentMethod;
     private LocalDateTime createAt;
 }

@@ -1,8 +1,11 @@
 package org.rookies.zdme.repository;
 
 import org.rookies.zdme.model.entity.Rental;
+import org.rookies.zdme.model.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface RentalRepository extends JpaRepository<Rental, Long> {
+import java.util.List;
 
+public interface RentalRepository extends JpaRepository<Rental, Long> {
+    List<Rental> findAllByUser(User user);
 }

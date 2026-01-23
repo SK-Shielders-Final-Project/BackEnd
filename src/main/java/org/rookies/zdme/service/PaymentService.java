@@ -65,8 +65,9 @@ public class PaymentService {
 //            String approvedKey = jsonNode.get("paymentKey").asText();
 //            Long approvedAmount = jsonNode.get("totalAmount").asLong();
 
-            // 유효한 user id 인지 확인 후 user 불러오기
-            User user = userRepository.findById(dto.getUserId())
+            // userId 값 고정. jwt 수정 예정
+            Long userId = 3L;
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
             // 사용자가 입력한 정보를 바탕으로 payment 객체 생성 (취약점 존재)
