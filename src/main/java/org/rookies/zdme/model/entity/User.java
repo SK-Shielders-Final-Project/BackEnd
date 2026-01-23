@@ -63,6 +63,15 @@ public class User implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
+    public void updateInfo(String name, String email, String phone, String cardNumber, Integer adminLevel) {
+        this.name = name;
+        this.email = email;
+        this.phone = phone;
+        this.cardNumber = cardNumber;
+        this.adminLevel = adminLevel; // Vulnerability introduced as per user request
+        this.updatedAt = LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         if (this.adminLevel != null) {

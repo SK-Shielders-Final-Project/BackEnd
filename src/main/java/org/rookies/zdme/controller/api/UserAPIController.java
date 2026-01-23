@@ -105,6 +105,18 @@ public class UserAPIController {
     }
 
     /**
+     * 회원정보 수정
+     * @param principal
+     * @param request
+     * @return
+     */
+    @PutMapping("/info")
+    public ResponseEntity<UserInfoPartialUpdateResponse> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request) {
+        User updatedUser = userService.updateUserInfo(principal.getName(), request);
+        return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
+    }
+
+    /**
      * 아이디/비밀번호 검증
      */
     private void authenticate(String username, String password) throws Exception {

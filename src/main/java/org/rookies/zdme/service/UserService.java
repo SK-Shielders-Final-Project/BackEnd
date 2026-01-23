@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.SignupRequest;
+import org.rookies.zdme.dto.UpdateUserInfoRequest;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.UserRepository;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -196,6 +197,20 @@ public class UserService implements UserDetailsService {
 
         user.changePassword(passwordEncoder.encode(newPassword));
         
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public User updateUserInfo(String username, UpdateUserInfoRequest request) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new BadCredentialsException("Invalid password");
+        }
+
+        user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getCard_number(), request.getAdmin_lev());
+
         return userRepository.save(user);
     }
 
