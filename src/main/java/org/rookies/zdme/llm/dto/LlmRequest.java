@@ -1,9 +1,14 @@
 package org.rookies.zdme.llm.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record LlmRequest(
         List<Message> messages
 ) {
-    public record Message(String role, String content) {}
+    public record Message(
+            String role,
+            @JsonProperty("user_id") Long userId,
+            String content
+    ) {}
 }

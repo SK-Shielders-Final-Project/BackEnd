@@ -1,7 +1,7 @@
 package org.rookies.zdme.chat.dto;
 
 public record  ChatResponseDto(
-        String conversationId,
+        @jakarta.validation.constraints.NotNull Long userId,
         String assistantMessage,
         String model
 ) {}

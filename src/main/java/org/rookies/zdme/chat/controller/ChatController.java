@@ -20,4 +20,5 @@ public class ChatController {
     public ChatResponseDto chat(@Valid @RequestBody ChatRequestDto req) {
         return chatService.chat(req);
     }
+
 }
