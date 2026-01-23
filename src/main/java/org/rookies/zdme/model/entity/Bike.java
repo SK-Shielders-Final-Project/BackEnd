@@ -1,39 +1,51 @@
 package org.rookies.zdme.model.entity;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-
 import java.time.LocalDateTime;
+import jakarta.persistence.*;
+import lombok.*;
 
 @Entity
 @Table(name = "bikes")
 @Getter
+@Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Bike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "bike_id")
     private Long bikeId;
 
-    @Column(unique = true, length = 100)
+    @Column(name = "serial_number", length = 100, unique = true)
     private String serialNumber;
 
-    @Column(length = 100)
+    @Column(name = "model_name", length = 100)
     private String modelName;
 
-    @Column(length = 20)
-    private String status;
+    @Column(name = "status", length = 20)
+    private String status; // "AVAILABLE" / "IN_USE" / "REPAIRING"
 
-    @Column
+    @Column(name = "latitude")
     private Double latitude;
 
-    @Column
+    @Column(name = "longitude")
     private Double longitude;
 
-    @Column
+    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    @Column
+    @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }
