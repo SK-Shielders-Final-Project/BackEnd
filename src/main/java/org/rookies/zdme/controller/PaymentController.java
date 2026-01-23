@@ -50,7 +50,8 @@ public class PaymentController {
         response.put("paymentKey", canceledPayment.getPaymentKey());
         response.put("orderId", canceledPayment.getOrderId());
         response.put("status", canceledPayment.getPaymentStatus());
-        response.put("canceledAmount", canceledPayment.getAmount());
+        response.put("remainedAmount", canceledPayment.getAmount());
+        response.put("currentTotalPoint", canceledPayment.getUser().getTotalPoint());
 
         return ResponseEntity.ok(response);
     }

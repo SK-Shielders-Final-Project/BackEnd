@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.boot.model.naming.IllegalIdentifierException;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
@@ -48,10 +49,20 @@ public class Payment {
     private LocalDateTime createdAt;
 
     public enum PaymentStatus{
-        READY, DONE, CANCELED, ABORTED
+        READY, DONE, CANCELED, ABORTED, PARTIAL_CANCELED
     }
 
-    public void cancelPayment() {
-        this.paymentStatus = PaymentStatus.CANCELED;
+    public void cancelPayment(Long cancelAmount) {
+        // 환불하려는 금액이 더 많은 경우
+        if (this.amount < cancelAmount) {
+            throw new IllegalIdentifierException("환불 요청이 남은 잔액보다 큽니다.");
+        }
+        this.amount -= cancelAmount;
+
+        if(this.amount == 0) {
+            this.paymentStatus = PaymentStatus.CANCELED;
+        } else {
+            this.paymentStatus = PaymentStatus.PARTIAL_CANCELED;
+        }
     }
 }

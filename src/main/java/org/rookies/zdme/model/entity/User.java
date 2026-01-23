@@ -50,6 +50,9 @@ public class User {
     private LocalDateTime updatedAt;
 
     public void updatePoint(Long amount) {
+//        if (amount + this.totalPoint < 0) {
+//            throw new IllegalStateException("회수할 포인트가 부족합니다.");
+//        }
         this.totalPoint += amount;
     }
 }

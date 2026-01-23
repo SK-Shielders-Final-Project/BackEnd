@@ -24,7 +24,6 @@ import java.util.*;
 public class PaymentService {
 
     private final UserRepository userRepository;
-    private final ObjectMapper objectMapper;
     private final PaymentRepository paymentRepository;
 
     @Value("${toss.secret-key}")
@@ -97,8 +96,8 @@ public class PaymentService {
 
     // 결제 내역 확인
     public List<Payment> getPayments() {
-        // userId를 1로 고정 -> 추후에 jwt 기반으로 변경할 예정
-        Long userId = 1L;
+        // userId를 고정 -> 추후에 jwt 기반으로 변경할 예정
+        Long userId = 3L;
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
@@ -111,6 +110,8 @@ public class PaymentService {
         // toss payments에서 PaymentKey를 기반으로 결제를 취소함
         Payment payment = paymentRepository.findByPaymentKey(dto.getPaymentKey())
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 결제 내역입니다."));
+
+        User user = payment.getUser();
 
         // 결제 상태가 취소인 경우
         if (payment.getPaymentStatus() == Payment.PaymentStatus.CANCELED) {
@@ -128,6 +129,7 @@ public class PaymentService {
 
         Map<String, Object> params = new HashMap<>();
         params.put("cancelReason", dto.getCancelReason());
+        params.put("cancelAmount", dto.getCancelAmount());
 
         HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(params, headers);
 
@@ -136,7 +138,12 @@ public class PaymentService {
 
             restTemplate.postForEntity(url, requestEntity, String.class);
 
-            payment.cancelPayment();
+            // [취약점] 포인트 회수 로직 누락
+            // 부분 환불하면 환불한 만큼의 포인트를 차감해야 함
+            // 아래의 로직을 사용하는 경우 point가 마이너스가 될 수 있음
+            user.updatePoint(-1 * dto.getCancelAmount());
+
+            payment.cancelPayment(dto.getCancelAmount());
             return paymentRepository.save(payment);
         } catch (Exception e) {
             throw new RuntimeException("환불 실패: " + e.getMessage());
