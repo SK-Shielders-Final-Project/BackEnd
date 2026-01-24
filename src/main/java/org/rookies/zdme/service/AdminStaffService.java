@@ -25,6 +25,7 @@ public class AdminStaffService {
 
         Integer requesterLev = requester.getAdminLevel();
         if (requesterLev == null || requesterLev != 2) {
+            System.out.println("adminId=" + adminId + ", requesterLev=" + requesterLev);
             throw new ForbiddenException("only super admin can update staff permission");
         }
 

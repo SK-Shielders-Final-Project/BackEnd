@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 
 import org.rookies.zdme.dto.inquiry.InquiryResponse;
 import org.rookies.zdme.dto.inquiry.InquiryWriteRequest;
-import org.rookies.zdme.exception.ForbiddenException;
 import org.rookies.zdme.exception.NotFoundException;
 import org.rookies.zdme.model.entity.File;
 import org.rookies.zdme.model.entity.Inquiry;
@@ -37,19 +36,21 @@ public class InquiryService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("user not found"));
 
-        File file = fileService.saveFromFileName(req.getFile()).orElse(null);
+        File file = null;
+        if (req.getFile_id() != null) {
+            file = fileService.getMeta(req.getFile_id());
+        }
 
         Inquiry inquiry = Inquiry.builder()
                 .user(user)
                 .title(req.getTitle())
                 .content(req.getContent())
-                .imageUrl("")     // 스펙에 image_url이 따로 있으나, 현재 요청은 file만 있음
+                .imageUrl("")
                 .file(file)
                 .adminReply(null)
                 .build();
 
         Inquiry saved = inquiryRepository.save(inquiry);
-
         return toResponse(saved, user.getAdminLevel());
     }
 
@@ -68,7 +69,7 @@ public class InquiryService {
 
         return inquiryRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(inq -> toResponse(inq, admin.getAdminLevel())) // 관리자 조회 응답 admin_lev는 관리자 레벨로 반환
+                .map(inq -> toResponse(inq, admin.getAdminLevel()))
                 .collect(Collectors.toList());
     }
 
@@ -76,8 +77,6 @@ public class InquiryService {
     public InquiryResponse reply(Long adminId, Long inquiryId, String adminReply) {
         User admin = userRepository.findById(adminId)
                 .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        // 권한 체크 제거: admin_level 0이어도 가능하도록 허용한다
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));

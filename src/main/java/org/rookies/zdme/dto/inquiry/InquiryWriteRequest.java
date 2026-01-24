@@ -8,5 +8,5 @@ import lombok.Setter;
 public class InquiryWriteRequest {
     private String title;
     private String content;
-    private String file; // "asdf.jpg"
+    private Long file_id; // optional
 }
