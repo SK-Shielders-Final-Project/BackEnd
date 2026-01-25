@@ -18,9 +18,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -28,6 +30,7 @@ public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MailService mailService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -141,6 +144,49 @@ public class UserService implements UserDetailsService {
                 .build();
 
         return userRepository.save(newUser);
+    }
+
+    public boolean requestPasswordReset(String username, String email, String host) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            if (user.getEmail().equals(email)) {
+                String token = Base64.getEncoder().encodeToString(email.getBytes());
+                String resetLink = "http://" + host + "/password-reset?token=" + token;
+
+                String emailBody = "<html>"
+                    + "<body>"
+                    + "<h2>비밀번호 재설정 요청</h2>"
+                    + "<p>비밀번호를 재설정하려면 아래 버튼을 클릭하세요.</p>"
+                    + "<a href=\"" + resetLink + "\" style=\"background-color:#007bff;color:white;padding:10px 20px;text-align:center;text-decoration:none;display:inline-block;\">비밀번호 재설정</a>"
+                    + "</body>"
+                    + "</html>";
+
+                mailService.sendMail(email, "비밀번호 재설정 링크입니다.", emailBody, true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    @Transactional
+    public boolean resetPassword(String token, String newPassword) {
+        String email;
+        try {
+            email = new String(Base64.getDecoder().decode(token));
+        } catch (IllegalArgumentException e) {
+            // Invalid Base64 token
+            return false;
+        }
+
+        Optional<User> userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            User user = userOptional.get();
+            user.changePassword(passwordEncoder.encode(newPassword));
+            userRepository.save(user);
+            return true;
+        }
+        return false;
     }
 
     public void checkUserRole(String username) {
