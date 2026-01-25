@@ -55,18 +55,18 @@ public class UserAPIController {
      * @throws Exception
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) throws Exception {
-
-        authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
-
-        userService.checkUserRole(authenticationRequest.getUsername());
-
-        final UserDetails userDetails = userService
-                .loadUserByUsername(authenticationRequest.getUsername());
-
-        final String token = jwtUtil.generateToken(userDetails);
-
-        return ResponseEntity.ok(new LoginResponse(token));
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) {
+        try {
+            authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
+            userService.checkUserRole(authenticationRequest.getUsername());
+            final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
+            final String token = jwtUtil.generateToken(userDetails);
+            return ResponseEntity.ok(new LoginResponse(token));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "아이디 또는 비밀번호가 일치하지 않습니다."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "로그인 처리 중 오류가 발생했습니다."));
+        }
     }
 
     /**
@@ -119,16 +119,9 @@ public class UserAPIController {
     /**
      * 아이디/비밀번호 검증
      */
-    private void authenticate(String username, String password) throws Exception {
+    private void authenticate(String username, String password) throws DisabledException, BadCredentialsException {
         Objects.requireNonNull(username);
         Objects.requireNonNull(password);
-
-        try {
-            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
-        } catch (DisabledException e) {
-            throw new Exception("USER_DISABLED", e);
-        } catch (BadCredentialsException e) {
-            throw new Exception("INVALID_CREDENTIALS", e);
-        }
+        authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
     }
 }
