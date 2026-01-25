@@ -206,22 +206,42 @@ public class UserService implements UserDetailsService {
     }
 
     public Map<String, Object> getUserInfo(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        String sql = "SELECT * FROM users WHERE user_id = " + userId;
+        List<Object[]> result;
+        try {
+            result = entityManager.createNativeQuery(sql).getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error executing query: " + e.getMessage());
+        }
 
+        if (result.isEmpty()) {
+            throw new RuntimeException("User not found with id: " + userId);
+        }
+
+        Object[] userData = result.get(0);
         Map<String, Object> userInfo = new LinkedHashMap<>();
-        userInfo.put("user_id", user.getUserId());
-        userInfo.put("username", user.getUsername());
-        userInfo.put("password", user.getPassword());
-        userInfo.put("email", user.getEmail());
-        userInfo.put("phone", user.getPhone());
-        userInfo.put("card_number", user.getCardNumber());
-        userInfo.put("admin_lev", user.getAdminLevel());
-        userInfo.put("point", user.getTotalPoint());
+        // Note: The order and type of columns depends on the actual table schema
+        userInfo.put("user_id", userData[0]);
+        userInfo.put("username", userData[1]);
+        userInfo.put("name", userData[2]);
+        userInfo.put("password", userData[3]);
+        userInfo.put("email", userData[4]);
+        userInfo.put("phone", userData[5]);
+        userInfo.put("card_number", userData[6]);
+        userInfo.put("total_point", userData[7]);
+        // Assuming 'pass' column exists at index 8, skipping it
+        userInfo.put("admin_lev", userData[9]);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        userInfo.put("created_at", user.getCreatedAt() != null ? user.getCreatedAt().format(formatter) : null);
-        userInfo.put("updated_at", user.getUpdatedAt() != null ? user.getUpdatedAt().format(formatter) : null);
+        // Handle Timestamp to LocalDateTime conversion before formatting
+        if (userData[10] != null) {
+            LocalDateTime createdAt = ((java.sql.Timestamp) userData[10]).toLocalDateTime();
+            userInfo.put("created_at", createdAt.format(formatter));
+        }
+        if (userData[11] != null) {
+            LocalDateTime updatedAt = ((java.sql.Timestamp) userData[11]).toLocalDateTime();
+            userInfo.put("updated_at", updatedAt.format(formatter));
+        }
 
         return userInfo;
     }
