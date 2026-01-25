@@ -15,6 +15,5 @@ public class UpdateUserInfoRequest {
     private String password;
     private String email;
     private String phone;
-    private String card_number;
     private Integer admin_lev;
 }

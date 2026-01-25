@@ -98,3 +98,6 @@ CREATE TABLE payments (
                           created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                           CONSTRAINT fk_payment_user FOREIGN KEY (user_id) REFERENCES users(user_id)
 );
+
+-- 250126
+ALTER TABLE users DROP COLUMN card_number;

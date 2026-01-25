@@ -16,7 +16,6 @@ public class UserUpdateResponse {
     private String username;
     private String email;
     private String phone;
-    private String card_number;
     private Integer admin_lev;
     private String created_at;
     private String updated_at;
@@ -28,7 +27,6 @@ public class UserUpdateResponse {
                 .username(user.getUsername())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .card_number(user.getCardNumber())
                 .admin_lev(user.getAdminLevel())
                 .created_at(user.getCreatedAt() != null ? user.getCreatedAt().format(formatter) : null)
                 .updated_at(user.getUpdatedAt() != null ? user.getUpdatedAt().format(formatter) : null)

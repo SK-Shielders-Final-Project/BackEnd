@@ -40,9 +40,6 @@ public class User implements UserDetails {
     @Column(length = 20)
     private String phone;
 
-    @Column(length = 20)
-    private String cardNumber;
-
     @Column
     private Integer totalPoint;
 
@@ -63,11 +60,10 @@ public class User implements UserDetails {
         this.updatedAt = LocalDateTime.now();
     }
 
-    public void updateInfo(String name, String email, String phone, String cardNumber, Integer adminLevel) {
+    public void updateInfo(String name, String email, String phone, Integer adminLevel) {
         this.name = name;
         this.email = email;
         this.phone = phone;
-        this.cardNumber = cardNumber;
         this.adminLevel = adminLevel; // Vulnerability introduced as per user request
         this.updatedAt = LocalDateTime.now();
     }

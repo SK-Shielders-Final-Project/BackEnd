@@ -21,9 +21,6 @@ public class SignupResponse {
     private String email;
     private String phone;
 
-    @JsonProperty("card_number")
-    private String cardNumber;
-
     @JsonProperty("admin_lev")
     private Integer adminLev;
 
@@ -45,7 +42,6 @@ public class SignupResponse {
                 .name(user.getName())
                 .email(user.getEmail())
                 .phone(user.getPhone())
-                .cardNumber(user.getCardNumber())
                 .adminLev(user.getAdminLevel())
                 .totalPoint(user.getTotalPoint())
                 .createdAt(user.getCreatedAt())

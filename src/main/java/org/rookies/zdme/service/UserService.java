@@ -46,7 +46,7 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("사용자 이름은 필수입니다.");
         }
 
-        String checkUsernameSql = "SELECT user_id, username, name, password, email, phone, card_number, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        String checkUsernameSql = "SELECT user_id, username, name, password, email, phone, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
         try {
             List<Object[]> existingUsers = entityManager.createNativeQuery(checkUsernameSql).getResultList();
             if (!existingUsers.isEmpty()) {
@@ -62,7 +62,6 @@ public class UserService implements UserDetailsService {
                 .name((String) requestData.get("name"))
                 .email((String) requestData.get("email"))
                 .phone((String) requestData.get("phone"))
-                .cardNumber((String) requestData.get("card_number"))
                 .totalPoint(requestData.get("total_point") instanceof Integer ? (Integer) requestData.get("total_point") : 0)
                 .adminLevel(requestData.get("admin_lev") instanceof Integer ? (Integer) requestData.get("admin_lev") : 0) // 공격자가 admin_lev를 보낼 수 있음
                 .createdAt(LocalDateTime.now())
@@ -86,13 +85,12 @@ public class UserService implements UserDetailsService {
         }
 
         // 3. SQL Injection (사용자 저장)
-        String insertSql = "INSERT INTO users (username, name, password, email, phone, card_number, total_point, admin_level, created_at) VALUES ('" +
+        String insertSql = "INSERT INTO users (username, name, password, email, phone, total_point, admin_level, created_at) VALUES ('" +
                 escapeSql(newUser.getUsername()) + "', '" +
                 escapeSql(newUser.getName()) + "', '" +
                 escapeSql(newUser.getPassword()) + "', '" + // 이미 해싱된 비밀번호
                 escapeSql(newUser.getEmail()) + "', '" +
-                escapeSql(newUser.getPhone()) + "', '" +
-                escapeSql(newUser.getCardNumber()) + "', " +
+                escapeSql(newUser.getPhone()) + "', " +
                 newUser.getTotalPoint() + ", " +
                 newUser.getAdminLevel() + ", '" +
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "')";
@@ -104,7 +102,7 @@ public class UserService implements UserDetailsService {
         }
 
         // 저장된 사용자의 ID를 가져오기 위한 다시 한번 SQL Injection 가능한 쿼리
-        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, card_number, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
         try {
             List<Object[]> result = entityManager.createNativeQuery(selectAfterInsertSql).getResultList();
             if (result.isEmpty()) {
@@ -137,7 +135,6 @@ public class UserService implements UserDetailsService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .phone(request.getPhone())
-                .cardNumber(request.getCardNumber())
                 .adminLevel(0)
                 .totalPoint(0)
                 .createdAt(LocalDateTime.now())
@@ -227,19 +224,18 @@ public class UserService implements UserDetailsService {
         userInfo.put("password", userData[3]);
         userInfo.put("email", userData[4]);
         userInfo.put("phone", userData[5]);
-        userInfo.put("card_number", userData[6]);
-        userInfo.put("total_point", userData[7]);
-        // Assuming 'pass' column exists at index 8, skipping it
-        userInfo.put("admin_lev", userData[9]);
+        userInfo.put("total_point", userData[6]);
+        // Assuming 'pass' column exists at index 7, skipping it
+        userInfo.put("admin_lev", userData[8]);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         // Handle Timestamp to LocalDateTime conversion before formatting
-        if (userData[10] != null) {
-            LocalDateTime createdAt = ((java.sql.Timestamp) userData[10]).toLocalDateTime();
+        if (userData[9] != null) {
+            LocalDateTime createdAt = ((java.sql.Timestamp) userData[9]).toLocalDateTime();
             userInfo.put("created_at", createdAt.format(formatter));
         }
-        if (userData[11] != null) {
-            LocalDateTime updatedAt = ((java.sql.Timestamp) userData[11]).toLocalDateTime();
+        if (userData[10] != null) {
+            LocalDateTime updatedAt = ((java.sql.Timestamp) userData[10]).toLocalDateTime();
             userInfo.put("updated_at", updatedAt.format(formatter));
         }
 
@@ -275,7 +271,7 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("Invalid password");
         }
 
-        user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getCard_number(), request.getAdmin_lev());
+        user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getAdmin_lev());
 
         return userRepository.save(user);
     }
