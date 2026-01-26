@@ -80,6 +80,7 @@ public class PaymentService {
                     .paymentKey(dto.getPaymentKey())
                     .paymentStatus(Payment.PaymentStatus.DONE)
                     .paymentMethod("카드")
+                    .remainAmount(dto.getAmount())
                     .build();
             user.updatePoint(dto.getAmount());
 
@@ -113,7 +114,9 @@ public class PaymentService {
                         .paymentMethod(p.getPaymentMethod())
                         .createAt(p.getCreatedAt())
                         .amount(p.getAmount())
+                        .remainAmount(p.getRemainAmount())
                         .userId(p.getUser().getUserId())
+                        .status(p.getPaymentStatus().toString())
                         .build())
                 .collect(Collectors.toList());
     }

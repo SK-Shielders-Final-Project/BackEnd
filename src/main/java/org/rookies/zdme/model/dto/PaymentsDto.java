@@ -14,4 +14,6 @@ public class PaymentsDto {
     private String paymentKey;
     private String paymentMethod;
     private LocalDateTime createAt;
+    private String status;
+    private Long remainAmount;
 }

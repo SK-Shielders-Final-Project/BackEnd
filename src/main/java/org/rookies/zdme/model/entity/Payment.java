@@ -34,6 +34,10 @@ public class Payment {
     @Column(nullable = false)
     private Long amount;
 
+    @Column(nullable = false)
+    private Long remainAmount;
+
+    @Enumerated(EnumType.STRING)
     @Column(length = 20)
     private PaymentStatus paymentStatus;
 
@@ -49,17 +53,17 @@ public class Payment {
     private LocalDateTime createdAt;
 
     public enum PaymentStatus{
-        READY, DONE, CANCELED, ABORTED, PARTIAL_CANCELED
+        READY, DONE, CANCELED, PARTIAL_CANCELED
     }
 
     public void cancelPayment(Long cancelAmount) {
         // 환불하려는 금액이 더 많은 경우
-        if (this.amount < cancelAmount) {
+        if (this.remainAmount < cancelAmount) {
             throw new IllegalIdentifierException("환불 요청이 남은 잔액보다 큽니다.");
         }
-        this.amount -= cancelAmount;
+        this.remainAmount -= cancelAmount;
 
-        if(this.amount == 0) {
+        if(this.remainAmount == 0) {
             this.paymentStatus = PaymentStatus.CANCELED;
         } else {
             this.paymentStatus = PaymentStatus.PARTIAL_CANCELED;
