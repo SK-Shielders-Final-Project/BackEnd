@@ -71,7 +71,7 @@ public class RentalService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-        List<Rental> rentals = rentalRepository.findAllByUser(user);
+        List<Rental> rentals = rentalRepository.findAllByUserOrderByCreatedAtDesc(user);
         return rentals.stream()
                 .map(r -> RentalsDto.builder()
                         .userId(r.getUser().getUserId())

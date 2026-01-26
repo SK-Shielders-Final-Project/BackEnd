@@ -1,6 +1,5 @@
 package org.rookies.zdme.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.model.dto.PaymentCancelDto;
@@ -105,7 +104,7 @@ public class PaymentService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
-        List<Payment> payments = paymentRepository.findAllByUser(user);
+        List<Payment> payments = paymentRepository.findAllByUserOrderByCreatedAtDesc(user);
 
         return payments.stream()
                 .map(p -> PaymentsDto.builder()
