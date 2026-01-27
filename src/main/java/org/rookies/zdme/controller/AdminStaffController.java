@@ -5,6 +5,9 @@ import org.rookies.zdme.dto.admin.StaffAdminLevelUpdateResponse;
 import org.rookies.zdme.service.AdminStaffService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
+
 
 @RestController
 @RequestMapping("/api/admin")
@@ -23,4 +26,11 @@ public class AdminStaffController {
     ) {
         return ResponseEntity.ok(adminStaffService.updateAdminLevel(adminId, request));
     }
+    @GetMapping({"/staff", "/staff/"})
+    public ResponseEntity<List<Map<String, Object>>> getStaffList(
+            @RequestHeader(name = "X-ADMIN-ID") Long adminId
+    ) {
+        return ResponseEntity.ok(adminStaffService.getStaffList(adminId));
+    }
+
 }
