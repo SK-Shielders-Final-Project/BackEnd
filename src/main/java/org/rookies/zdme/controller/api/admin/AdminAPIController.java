@@ -2,6 +2,7 @@ package org.rookies.zdme.controller.api.admin;
 
 import org.rookies.zdme.dto.LoginRequest;
 import org.rookies.zdme.dto.LoginResponse;
+import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.security.JwtUtil;
 import org.rookies.zdme.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +48,10 @@ public class AdminAPIController {
         userService.checkAdminRole(authenticationRequest.getUsername());
 
         final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
-
+        final Long userId = ((User) userDetails).getUserId();
         final String token = jwtUtil.generateToken(userDetails);
 
-        return ResponseEntity.ok(new LoginResponse(token));
+        return ResponseEntity.ok(new LoginResponse(token, userId));
     }
 
     /**

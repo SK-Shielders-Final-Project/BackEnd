@@ -50,6 +50,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // 로그인 API 경로 등은 인증 없이 누구나 접근 가능하게 설정 (Permit All)
                         .requestMatchers("/api/user/auth/login", "/api/user/auth/signup", "/api/admin/auth/login", "/.well-known/jwks.json", "/api/auth/password-reset/**", "/error").permitAll()
+                        .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
                         // 그 외 모든 요청은 반드시 인증을 거쳐야 함
                         .anyRequest().authenticated()
                 )

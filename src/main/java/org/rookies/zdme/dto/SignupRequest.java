@@ -16,7 +16,4 @@ public class SignupRequest {
     private String password;
     private String email;
     private String phone;
-
-    @JsonProperty("card_number")
-    private String cardNumber;
 }

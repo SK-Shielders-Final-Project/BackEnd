@@ -46,7 +46,7 @@ public class UserService implements UserDetailsService {
             throw new IllegalArgumentException("사용자 이름은 필수입니다.");
         }
 
-        String checkUsernameSql = "SELECT user_id, username, name, password, email, phone, card_number, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        String checkUsernameSql = "SELECT user_id FROM users WHERE username = '" + username + "'";
         try {
             List<Object[]> existingUsers = entityManager.createNativeQuery(checkUsernameSql).getResultList();
             if (!existingUsers.isEmpty()) {
@@ -54,6 +54,32 @@ public class UserService implements UserDetailsService {
             }
         } catch (Exception e) {
             throw new RuntimeException("사용자 중복 확인 중 오류 발생: " + e.getMessage(), e);
+        }
+
+        String email = (String) requestData.get("email");
+        if (email != null && !email.trim().isEmpty()) {
+            String checkEmailSql = "SELECT user_id FROM users WHERE email = '" + email + "'";
+            try {
+                List<Object[]> existingEmails = entityManager.createNativeQuery(checkEmailSql).getResultList();
+                if (!existingEmails.isEmpty()) {
+                    throw new IllegalStateException("이미 존재하는 이메일입니다.");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("이메일 중복 확인 중 오류 발생: " + e.getMessage(), e);
+            }
+        }
+
+        String phone = (String) requestData.get("phone");
+        if (phone != null && !phone.trim().isEmpty()) {
+            String checkPhoneSql = "SELECT user_id FROM users WHERE phone = '" + phone + "'";
+            try {
+                List<Object[]> existingPhones = entityManager.createNativeQuery(checkPhoneSql).getResultList();
+                if (!existingPhones.isEmpty()) {
+                    throw new IllegalStateException("이미 존재하는 휴대폰 번호입니다.");
+                }
+            } catch (Exception e) {
+                throw new RuntimeException("휴대폰 번호 중복 확인 중 오류 발생: " + e.getMessage(), e);
+            }
         }
 
         // 2. 대량 할당
@@ -64,9 +90,9 @@ public class UserService implements UserDetailsService {
                 .phone((String) requestData.get("phone"))
                 .cardNumber((String) requestData.get("card_number"))
                 .totalPoint(requestData.get("total_point") instanceof Long ? (Long) requestData.get("total_point") : 0)
+                .totalPoint(requestData.get("total_point") instanceof Integer ? (Integer) requestData.get("total_point") : 0)
                 .adminLevel(requestData.get("admin_lev") instanceof Integer ? (Integer) requestData.get("admin_lev") : 0) // 공격자가 admin_lev를 보낼 수 있음
                 .createdAt(LocalDateTime.now())
-                // .updatedAt(null) // 기본값
                 .build();
         
         String rawPassword = (String) requestData.get("password");
@@ -86,13 +112,12 @@ public class UserService implements UserDetailsService {
         }
 
         // 3. SQL Injection (사용자 저장)
-        String insertSql = "INSERT INTO users (username, name, password, email, phone, card_number, total_point, admin_level, created_at) VALUES ('" +
+        String insertSql = "INSERT INTO users (username, name, password, email, phone, total_point, admin_level, created_at) VALUES ('" +
                 escapeSql(newUser.getUsername()) + "', '" +
                 escapeSql(newUser.getName()) + "', '" +
                 escapeSql(newUser.getPassword()) + "', '" + // 이미 해싱된 비밀번호
                 escapeSql(newUser.getEmail()) + "', '" +
-                escapeSql(newUser.getPhone()) + "', '" +
-                escapeSql(newUser.getCardNumber()) + "', " +
+                escapeSql(newUser.getPhone()) + "', " +
                 newUser.getTotalPoint() + ", " +
                 newUser.getAdminLevel() + ", '" +
                 DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "')";
@@ -104,7 +129,7 @@ public class UserService implements UserDetailsService {
         }
 
         // 저장된 사용자의 ID를 가져오기 위한 다시 한번 SQL Injection 가능한 쿼리
-        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, card_number, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
         try {
             List<Object[]> result = entityManager.createNativeQuery(selectAfterInsertSql).getResultList();
             if (result.isEmpty()) {
@@ -137,7 +162,6 @@ public class UserService implements UserDetailsService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .email(request.getEmail())
                 .phone(request.getPhone())
-                .cardNumber(request.getCardNumber())
                 .adminLevel(0)
                 .totalPoint(0L)
                 .createdAt(LocalDateTime.now())
@@ -206,7 +230,7 @@ public class UserService implements UserDetailsService {
     }
 
     public Map<String, Object> getUserInfo(Long userId) {
-        String sql = "SELECT * FROM users WHERE user_id = " + userId;
+        String sql = "SELECT user_id, username, name, password, email, phone, total_point, admin_level, created_at, updated_at FROM users WHERE user_id = " + userId;
         List<Object[]> result;
         try {
             result = entityManager.createNativeQuery(sql).getResultList();
@@ -215,7 +239,7 @@ public class UserService implements UserDetailsService {
         }
 
         if (result.isEmpty()) {
-            throw new RuntimeException("User not found with id: " + userId);
+            throw new UsernameNotFoundException("User not found with userId: " + userId);
         }
 
         Object[] userData = result.get(0);
@@ -227,20 +251,40 @@ public class UserService implements UserDetailsService {
         userInfo.put("password", userData[3]);
         userInfo.put("email", userData[4]);
         userInfo.put("phone", userData[5]);
-        userInfo.put("card_number", userData[6]);
-        userInfo.put("total_point", userData[7]);
-        // Assuming 'pass' column exists at index 8, skipping it
-        userInfo.put("admin_lev", userData[9]);
+        userInfo.put("total_point", userData[6]);
+        userInfo.put("admin_lev", userData[7]);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        // Handle Timestamp to LocalDateTime conversion before formatting
-        if (userData[10] != null) {
-            LocalDateTime createdAt = ((java.sql.Timestamp) userData[10]).toLocalDateTime();
+
+        if (userData[8] != null) {
+            Object rawCreatedAt = userData[8];
+            LocalDateTime createdAt;
+            if (rawCreatedAt instanceof java.sql.Timestamp) {
+                createdAt = ((java.sql.Timestamp) rawCreatedAt).toLocalDateTime();
+            } else if (rawCreatedAt instanceof Number) {
+                createdAt = LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(((Number) rawCreatedAt).longValue()), java.time.ZoneId.systemDefault());
+            } else {
+                throw new RuntimeException("Cannot convert created_at of type " + rawCreatedAt.getClass().getName());
+            }
             userInfo.put("created_at", createdAt.format(formatter));
         }
-        if (userData[11] != null) {
-            LocalDateTime updatedAt = ((java.sql.Timestamp) userData[11]).toLocalDateTime();
-            userInfo.put("updated_at", updatedAt.format(formatter));
+
+        if (userData[9] != null) {
+            Object rawUpdatedAt = userData[9];
+            LocalDateTime updatedAt;
+            if (rawUpdatedAt instanceof java.sql.Timestamp) {
+                updatedAt = ((java.sql.Timestamp) rawUpdatedAt).toLocalDateTime();
+            } else if (rawUpdatedAt instanceof Number) {
+                updatedAt = LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(((Number) rawUpdatedAt).longValue()), java.time.ZoneId.systemDefault());
+            } else {
+                updatedAt = null; // Or throw an exception, depending on expected behavior
+            }
+
+            if (updatedAt != null) {
+                userInfo.put("updated_at", updatedAt.format(formatter));
+            }
+        } else {
+            userInfo.put("updated_at", null);
         }
 
         return userInfo;
@@ -275,7 +319,7 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("Invalid password");
         }
 
-        user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getCard_number(), request.getAdmin_lev());
+        user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getAdmin_lev());
 
         return userRepository.save(user);
     }
