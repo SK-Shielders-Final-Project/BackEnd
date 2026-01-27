@@ -117,8 +117,10 @@ public class UserService implements UserDetailsService {
                 escapeSql(newUser.getEmail()) + "', '" +
                 escapeSql(newUser.getPhone()) + "', " +
                 newUser.getTotalPoint() + ", " +
-                newUser.getAdminLevel() + ", '" +
-                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "')";
+                newUser.getAdminLevel() + ", " +
+                // newUser.getAdminLevel() + ", '" +
+                // DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "')";
+                "TO_DATE('" + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "', 'YYYY-MM-DD HH24:MI:SS'))";
 
         try {
             entityManager.createNativeQuery(insertSql).executeUpdate();
