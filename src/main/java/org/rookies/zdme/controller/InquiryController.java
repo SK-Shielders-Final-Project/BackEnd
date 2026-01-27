@@ -2,11 +2,8 @@ package org.rookies.zdme.controller;
 
 import java.util.List;
 
-import org.rookies.zdme.dto.inquiry.InquiryReplyRequest;
-import org.rookies.zdme.dto.inquiry.InquiryResponse;
-import org.rookies.zdme.dto.inquiry.InquiryWriteRequest;
+import org.rookies.zdme.dto.inquiry.*;
 import org.rookies.zdme.service.InquiryService;
-import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,7 +12,6 @@ import org.springframework.web.bind.annotation.*;
 public class InquiryController {
 
     private final InquiryService inquiryService;
-    private static final int ADMIN_INQUIRY_PAGE_SIZE = 10;
 
     public InquiryController(InquiryService inquiryService) {
         this.inquiryService = inquiryService;
@@ -31,6 +27,15 @@ public class InquiryController {
         return ResponseEntity.ok(res);
     }
 
+    // ✅ 문의사항 수정 (사용자)
+    @PutMapping("/user/inquiry/modify")
+    public ResponseEntity<InquiryModifyResponse> modify(
+            @RequestHeader(name = "X-USER-ID") Long userId,
+            @RequestBody InquiryModifyRequest request
+    ) {
+        return ResponseEntity.ok(inquiryService.modify(userId, request));
+    }
+
     // 사용자 측 문의사항 조회
     @PostMapping("/user/inquiry")
     public ResponseEntity<List<InquiryResponse>> listByUser(
@@ -39,26 +44,12 @@ public class InquiryController {
         return ResponseEntity.ok(inquiryService.listByUser(userId));
     }
 
-    // ✅ 관리자 측 문의사항 목록 페이징 조회 (size=10 고정)
-    // GET /api/admin/inquiry?page=0
-    @GetMapping("/admin/inquiry")
-    public ResponseEntity<Page<InquiryResponse>> listForAdminPaged(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
-            @RequestParam(defaultValue = "0") int page
+    // 관리자 측 문의사항 전체 조회
+    @PostMapping("/admin/inquiry")
+    public ResponseEntity<List<InquiryResponse>> listForAdmin(
+            @RequestHeader(name = "X-ADMIN-ID") Long adminId
     ) {
-        return ResponseEntity.ok(
-                inquiryService.listAllForAdminPaged(adminId, page, ADMIN_INQUIRY_PAGE_SIZE)
-        );
-    }
-
-    // ✅ 관리자 측 문의사항 단건 조회
-    // GET /api/admin/inquiry/{inquiry_id}
-    @GetMapping("/admin/inquiry/{inquiryId}")
-    public ResponseEntity<InquiryResponse> getOneForAdmin(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
-            @PathVariable Long inquiryId
-    ) {
-        return ResponseEntity.ok(inquiryService.getOneForAdmin(adminId, inquiryId));
+        return ResponseEntity.ok(inquiryService.listAllForAdmin(adminId));
     }
 
     // 관리자 답변 작성
@@ -74,4 +65,27 @@ public class InquiryController {
         );
         return ResponseEntity.ok(res);
     }
+
+    // 사용자 문의 삭제
+    @PostMapping("/user/inquiry/delete")
+    public ResponseEntity<InquiryDeleteResponse> deleteByUser(
+            @RequestHeader(name = "X-USER-ID") Long userId,
+            @RequestBody InquiryDeleteRequest request
+    ) {
+        return ResponseEntity.ok(
+                inquiryService.deleteByUser(userId, request.getInquiry_id())
+        );
+    }
+
+    // 관리자 문의 삭제
+    @PostMapping("/admin/inquiry/delete")
+    public ResponseEntity<InquiryDeleteResponse> deleteByAdmin(
+            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
+            @RequestBody InquiryDeleteRequest request
+    ) {
+        return ResponseEntity.ok(
+                inquiryService.deleteByAdmin(adminId, request.getInquiry_id())
+        );
+    }
+
 }

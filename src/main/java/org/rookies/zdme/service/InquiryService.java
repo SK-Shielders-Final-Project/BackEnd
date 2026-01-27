@@ -3,16 +3,14 @@ package org.rookies.zdme.service;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.rookies.zdme.dto.inquiry.InquiryResponse;
-import org.rookies.zdme.dto.inquiry.InquiryWriteRequest;
+import org.rookies.zdme.dto.inquiry.*;
+import org.rookies.zdme.exception.ForbiddenException;
 import org.rookies.zdme.exception.NotFoundException;
 import org.rookies.zdme.model.entity.File;
 import org.rookies.zdme.model.entity.Inquiry;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.InquiryRepository;
 import org.rookies.zdme.repository.UserRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,7 +62,6 @@ public class InquiryService {
                 .collect(Collectors.toList());
     }
 
-    // ====== 기존 관리자 전체 조회(그대로 유지) ======
     @Transactional(readOnly = true)
     public List<InquiryResponse> listAllForAdmin(Long adminId) {
         User admin = userRepository.findById(adminId)
@@ -74,32 +71,6 @@ public class InquiryService {
                 .stream()
                 .map(inq -> toResponse(inq, admin.getAdminLevel()))
                 .collect(Collectors.toList());
-    }
-
-    // ====== ✅ 관리자 페이징 조회 (신규) ======
-    @Transactional(readOnly = true)
-    public Page<InquiryResponse> listAllForAdminPaged(Long adminId, int page, int size) {
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        int safePage = Math.max(page, 0);
-        int safeSize = Math.min(Math.max(size, 1), 100);
-
-        Page<Inquiry> result = inquiryRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(safePage, safeSize));
-
-        return result.map(inq -> toResponse(inq, admin.getAdminLevel()));
-    }
-
-    // ====== ✅ 관리자 단건 조회 (신규) ======
-    @Transactional(readOnly = true)
-    public InquiryResponse getOneForAdmin(Long adminId, Long inquiryId) {
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        Inquiry inquiry = inquiryRepository.findById(inquiryId)
-                .orElseThrow(() -> new NotFoundException("inquiry not found"));
-
-        return toResponse(inquiry, admin.getAdminLevel());
     }
 
     @Transactional
@@ -114,6 +85,39 @@ public class InquiryService {
         Inquiry saved = inquiryRepository.save(inquiry);
 
         return toResponse(saved, admin.getAdminLevel());
+    }
+
+    // ✅ 문의 수정 (사용자)
+    @Transactional
+    public InquiryModifyResponse modify(Long userId, InquiryModifyRequest req) {
+        if (req == null) throw new IllegalArgumentException("request is required");
+        if (req.getInquiry_id() == null) throw new IllegalArgumentException("inquiry_id is required");
+        if (req.getTitle() == null || req.getTitle().isBlank()) throw new IllegalArgumentException("title is required");
+        if (req.getContent() == null) req.setContent("");
+
+        // 소유권 검증
+        boolean owned = inquiryRepository.existsByInquiryIdAndUser_UserId(req.getInquiry_id(), userId);
+        if (!owned) throw new ForbiddenException("no permission to modify this inquiry");
+
+        Inquiry inquiry = inquiryRepository.findById(req.getInquiry_id())
+                .orElseThrow(() -> new NotFoundException("inquiry not found"));
+
+        inquiry.setTitle(req.getTitle());
+        inquiry.setContent(req.getContent());
+
+        // file_id 정책: null이면 제거, 값 있으면 교체
+        if (req.getFile_id() == null) {
+            inquiry.setFile(null);
+        } else {
+            File file = fileService.getMeta(req.getFile_id());
+            inquiry.setFile(file);
+        }
+
+        inquiryRepository.save(inquiry);
+
+        return InquiryModifyResponse.builder()
+                .result("Y")
+                .build();
     }
 
     private InquiryResponse toResponse(Inquiry inq, Integer adminLevForResponse) {
@@ -132,4 +136,39 @@ public class InquiryService {
                 .updated_at(inq.getUpdatedAt())
                 .build();
     }
+
+    @Transactional
+    public InquiryDeleteResponse deleteByUser(Long userId, Long inquiryId) {
+        if (inquiryId == null) throw new IllegalArgumentException("inquiry_id is required");
+
+        boolean owned = inquiryRepository.existsByInquiryIdAndUser_UserId(inquiryId, userId);
+        if (!owned) throw new ForbiddenException("no permission to delete this inquiry");
+
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new NotFoundException("inquiry not found"));
+
+        inquiryRepository.delete(inquiry);
+
+        return InquiryDeleteResponse.builder()
+                .result("Y")
+                .build();
+    }
+
+    @Transactional
+    public InquiryDeleteResponse deleteByAdmin(Long adminId, Long inquiryId) {
+        if (inquiryId == null) throw new IllegalArgumentException("inquiry_id is required");
+
+        userRepository.findById(adminId)
+                .orElseThrow(() -> new NotFoundException("admin not found"));
+
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new NotFoundException("inquiry not found"));
+
+        inquiryRepository.delete(inquiry);
+
+        return InquiryDeleteResponse.builder()
+                .result("Y")
+                .build();
+    }
+
 }
