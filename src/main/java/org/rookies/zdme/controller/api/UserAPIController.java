@@ -12,6 +12,7 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -61,7 +62,12 @@ public class UserAPIController {
             userService.checkUserRole(authenticationRequest.getUsername());
             final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
             final String token = jwtUtil.generateToken(userDetails);
-            return ResponseEntity.ok(new LoginResponse(token));
+            final Long userId = ((User) userDetails).getUserId();
+            return ResponseEntity.ok(new LoginResponse(token, userId));
+        } catch (DisabledException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "사용자 계정이 비활성화되었습니다."));
+        } catch (UsernameNotFoundException e) { // For security, treat UsernameNotFound as invalid credentials
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "아이디 또는 비밀번호가 일치하지 않습니다."));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "아이디 또는 비밀번호가 일치하지 않습니다."));
         } catch (Exception e) {
@@ -79,29 +85,45 @@ public class UserAPIController {
         try {
             Map<String, Object> userInfo = userService.getUserInfo(userId);
             return new ResponseEntity<>(userInfo, HttpStatus.OK);
-        } catch (RuntimeException e) {
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "회원 정보 조회 중 오류가 발생했습니다."));
         }
     }
 
     @PostMapping("/verify-password")
     public ResponseEntity<?> verifyPassword(Principal principal, @RequestBody VerifyPasswordRequest request) {
-        boolean success = userService.verifyPassword(principal.getName(), request.getPassword());
-        if (success) {
-            return ResponseEntity.ok(new VerifyPasswordResponse("success"));
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            boolean success = userService.verifyPassword(principal.getName(), request.getPassword());
+            if (success) {
+                return ResponseEntity.ok(new VerifyPasswordResponse("success"));
+            } else {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "비밀번호가 일치하지 않습니다."));
+            }
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "비밀번호 확인 중 오류가 발생했습니다."));
         }
     }
 
     @PutMapping("/auth/changepw")
-    public ResponseEntity<UserUpdateResponse> changePassword(Principal principal, @RequestBody ChangePasswordRequest request) {
-        User updatedUser = userService.changePassword(
-                principal.getName(),
-                request.getCurrent_password(),
-                request.getNew_password()
-        );
-        return ResponseEntity.ok(UserUpdateResponse.fromEntity(updatedUser));
+    public ResponseEntity<?> changePassword(Principal principal, @RequestBody ChangePasswordRequest request) {
+        try {
+            User updatedUser = userService.changePassword(
+                    principal.getName(),
+                    request.getCurrent_password(),
+                    request.getNew_password()
+            );
+            return ResponseEntity.ok(UserUpdateResponse.fromEntity(updatedUser));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "현재 비밀번호가 일치하지 않습니다."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "비밀번호 변경 중 오류가 발생했습니다."));
+        }
     }
 
     /**
@@ -111,9 +133,15 @@ public class UserAPIController {
      * @return
      */
     @PutMapping("/info")
-    public ResponseEntity<UserInfoPartialUpdateResponse> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request) {
-        User updatedUser = userService.updateUserInfo(principal.getName(), request);
-        return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
+    public ResponseEntity<?> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request) {
+        try {
+            User updatedUser = userService.updateUserInfo(principal.getName(), request);
+            return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "비밀번호가 일치하지 않습니다."));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "회원 정보 수정 중 오류가 발생했습니다."));
+        }
     }
 
     /**

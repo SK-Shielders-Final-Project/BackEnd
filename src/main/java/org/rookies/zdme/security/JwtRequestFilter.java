@@ -13,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.util.AntPathMatcher; // Import AntPathMatcher
 
 import java.io.IOException;
 
@@ -29,9 +30,26 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
+    // Use AntPathMatcher for path pattern matching
+    private AntPathMatcher antPathMatcher = new AntPathMatcher();
+
+    // Define public URLs that do not require JWT authentication, mirroring SecurityConfig
+    // Now references SecurityConstants for PUBLIC_URLS
+    private static final String[] PUBLIC_URLS = SecurityConstants.PUBLIC_URLS;
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+
+        // Check if the current request URI is a public URL
+        String requestUri = request.getRequestURI();
+        for (String publicUrl : PUBLIC_URLS) {
+            if (antPathMatcher.match(publicUrl, requestUri)) {
+                // If it's a public URL, skip JWT processing and proceed with the filter chain
+                chain.doFilter(request, response);
+                return;
+            }
+        }
 
         // 헤더에서 Authorization 항목 get
         final String requestTokenHeader = request.getHeader("Authorization");
