@@ -1,10 +1,10 @@
 package org.rookies.zdme.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.PaymentCancelDto;
-import org.rookies.zdme.model.dto.PaymentRequestDto;
-import org.rookies.zdme.model.dto.PaymentResponseDto;
-import org.rookies.zdme.model.dto.PaymentsDto;
+import org.rookies.zdme.dto.PaymentCancelDto;
+import org.rookies.zdme.dto.PaymentRequestDto;
+import org.rookies.zdme.dto.PaymentResponseDto;
+import org.rookies.zdme.dto.PaymentsDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.service.PaymentService;
 import org.springframework.http.ResponseEntity;

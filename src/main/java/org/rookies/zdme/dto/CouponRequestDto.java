@@ -1,4 +1,4 @@
-package org.rookies.zdme.model.dto;
+package org.rookies.zdme.dto;
 
 import lombok.Data;
 

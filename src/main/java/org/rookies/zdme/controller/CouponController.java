@@ -1,11 +1,14 @@
 package org.rookies.zdme.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.CouponRequestDto;
-import org.rookies.zdme.model.dto.CouponResponseDto;
+import org.rookies.zdme.dto.CouponRequestDto;
+import org.rookies.zdme.dto.CouponResponseDto;
+import org.rookies.zdme.security.SecurityUtil;
 import org.rookies.zdme.service.CouponService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;

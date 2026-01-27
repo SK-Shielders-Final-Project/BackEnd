@@ -1,11 +1,9 @@
 package org.rookies.zdme.controller;
 
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.RentalRequestDto;
-import org.rookies.zdme.model.dto.RentalResponseDto;
-import org.rookies.zdme.model.dto.RentalsDto;
-import org.rookies.zdme.model.entity.Payment;
-import org.rookies.zdme.model.entity.Rental;
+import org.rookies.zdme.dto.RentalRequestDto;
+import org.rookies.zdme.dto.RentalResponseDto;
+import org.rookies.zdme.dto.RentalsDto;
 import org.rookies.zdme.service.RentalService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -28,7 +28,7 @@ public class SignupResponse {
     private Integer adminLev;
 
     @JsonProperty("total_point")
-    private Integer totalPoint;
+    private Long totalPoint;
 
     @JsonProperty("created_at")
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd HH:mm:ss")

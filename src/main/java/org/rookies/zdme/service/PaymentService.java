@@ -2,14 +2,15 @@ package org.rookies.zdme.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.PaymentCancelDto;
-import org.rookies.zdme.model.dto.PaymentRequestDto;
-import org.rookies.zdme.model.dto.PaymentResponseDto;
-import org.rookies.zdme.model.dto.PaymentsDto;
+import org.rookies.zdme.dto.PaymentCancelDto;
+import org.rookies.zdme.dto.PaymentRequestDto;
+import org.rookies.zdme.dto.PaymentResponseDto;
+import org.rookies.zdme.dto.PaymentsDto;
 import org.rookies.zdme.model.entity.Payment;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.PaymentRepository;
 import org.rookies.zdme.repository.UserRepository;
+import org.rookies.zdme.security.SecurityUtil;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
@@ -66,9 +67,8 @@ public class PaymentService {
 //            String approvedKey = jsonNode.get("paymentKey").asText();
 //            Long approvedAmount = jsonNode.get("totalAmount").asLong();
 
-            // userId 값 고정. jwt 수정 예정
-            Long userId = 3L;
-            User user = userRepository.findById(userId)
+            String username = SecurityUtil.getCurrentUsername();
+            User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
             // 사용자가 입력한 정보를 바탕으로 payment 객체 생성 (취약점 존재)
@@ -99,9 +99,8 @@ public class PaymentService {
 
     // 결제 내역 확인
     public List<PaymentsDto> getPayments() {
-        // userId를 고정 -> 추후에 jwt 기반으로 변경할 예정
-        Long userId = 3L;
-        User user = userRepository.findById(userId)
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         List<Payment> payments = paymentRepository.findAllByUserOrderByCreatedAtDesc(user);

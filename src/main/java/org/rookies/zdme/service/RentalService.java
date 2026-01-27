@@ -1,15 +1,17 @@
 package org.rookies.zdme.service;
 
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.RentalRequestDto;
-import org.rookies.zdme.model.dto.RentalResponseDto;
-import org.rookies.zdme.model.dto.RentalsDto;
+import org.rookies.zdme.dto.RentalRequestDto;
+import org.rookies.zdme.dto.RentalResponseDto;
+import org.rookies.zdme.dto.RentalsDto;
 import org.rookies.zdme.model.entity.Bike;
 import org.rookies.zdme.model.entity.Rental;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.BikeRepository;
 import org.rookies.zdme.repository.RentalRepository;
 import org.rookies.zdme.repository.UserRepository;
+import org.rookies.zdme.security.SecurityConfig;
+import org.rookies.zdme.security.SecurityUtil;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -29,9 +31,8 @@ public class RentalService {
     public RentalResponseDto startRental(RentalRequestDto dto) {
         long requiredPoint = dto.getHoursToUse() * 1000L;
 
-        // user_id를 고정. jwt로 수정 예정
-        Long userId = 3L;
-        User user = userRepository.findById(userId)
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
 
         Bike bike = bikeRepository.findById(dto.getBikeId())
@@ -67,8 +68,8 @@ public class RentalService {
     }
 
     public List<RentalsDto> getRentals(){
-        Long userId = 3L;
-        User user = userRepository.findById(userId)
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
         List<Rental> rentals = rentalRepository.findAllByUserOrderByCreatedAtDesc(user);

@@ -2,12 +2,13 @@ package org.rookies.zdme.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
-import org.rookies.zdme.model.dto.CouponRequestDto;
-import org.rookies.zdme.model.dto.CouponResponseDto;
+import org.rookies.zdme.dto.CouponRequestDto;
+import org.rookies.zdme.dto.CouponResponseDto;
 import org.rookies.zdme.model.entity.UsedCoupon;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.UsedCouponRepository;
 import org.rookies.zdme.repository.UserRepository;
+import org.rookies.zdme.security.SecurityUtil;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -24,8 +25,8 @@ public class CouponService {
 
     @Transactional
     public CouponResponseDto redeemCoupon(CouponRequestDto dto) {
-        Long userId = 3L;
-        User user = userRepository.findById(userId)
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다."));
 
         String couponCode = dto.getCouponCode();
@@ -40,7 +41,7 @@ public class CouponService {
 
         try {
             UsedCoupon usedCoupon = UsedCoupon.builder()
-                    .userId(userId)
+                    .userId(user.getUserId())
                     .couponCode(couponCode)
                     .build();
 
