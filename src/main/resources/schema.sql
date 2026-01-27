@@ -6,9 +6,7 @@ CREATE TABLE users (
                        password     VARCHAR2(255) NOT NULL,
                        email        VARCHAR2(100),
                        phone        VARCHAR2(20),
-                       card_number  VARCHAR2(20),
                        total_point  NUMBER DEFAULT 0,
-                       pass         VARCHAR2(100),
                        admin_level  NUMBER(1) DEFAULT 0, -- 0: 사용자, 1: 관리자, 2: 상위 관리자
                        created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                        updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -101,3 +99,4 @@ CREATE TABLE payments (
 
 -- 250126
 ALTER TABLE users DROP COLUMN card_number;
+ALTER TABLE users DROP COLUMN pass;

@@ -43,9 +43,6 @@ public class User implements UserDetails {
     @Column
     private Integer totalPoint;
 
-    @Column(length = 100)
-    private String pass;
-
     @Column
     private Integer adminLevel;
 
