@@ -88,9 +88,7 @@ public class UserService implements UserDetailsService {
                 .name((String) requestData.get("name"))
                 .email((String) requestData.get("email"))
                 .phone((String) requestData.get("phone"))
-                .cardNumber((String) requestData.get("card_number"))
                 .totalPoint(requestData.get("total_point") instanceof Long ? (Long) requestData.get("total_point") : 0)
-                .totalPoint(requestData.get("total_point") instanceof Integer ? (Integer) requestData.get("total_point") : 0)
                 .adminLevel(requestData.get("admin_lev") instanceof Integer ? (Integer) requestData.get("admin_lev") : 0) // 공격자가 admin_lev를 보낼 수 있음
                 .createdAt(LocalDateTime.now())
                 .build();
