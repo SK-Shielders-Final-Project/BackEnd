@@ -11,6 +11,8 @@ import org.rookies.zdme.model.entity.Inquiry;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.InquiryRepository;
 import org.rookies.zdme.repository.UserRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,6 +64,7 @@ public class InquiryService {
                 .collect(Collectors.toList());
     }
 
+    // ====== 기존 관리자 전체 조회(그대로 유지) ======
     @Transactional(readOnly = true)
     public List<InquiryResponse> listAllForAdmin(Long adminId) {
         User admin = userRepository.findById(adminId)
@@ -71,6 +74,32 @@ public class InquiryService {
                 .stream()
                 .map(inq -> toResponse(inq, admin.getAdminLevel()))
                 .collect(Collectors.toList());
+    }
+
+    // ====== ✅ 관리자 페이징 조회 (신규) ======
+    @Transactional(readOnly = true)
+    public Page<InquiryResponse> listAllForAdminPaged(Long adminId, int page, int size) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new NotFoundException("admin not found"));
+
+        int safePage = Math.max(page, 0);
+        int safeSize = Math.min(Math.max(size, 1), 100);
+
+        Page<Inquiry> result = inquiryRepository.findAllByOrderByCreatedAtDesc(PageRequest.of(safePage, safeSize));
+
+        return result.map(inq -> toResponse(inq, admin.getAdminLevel()));
+    }
+
+    // ====== ✅ 관리자 단건 조회 (신규) ======
+    @Transactional(readOnly = true)
+    public InquiryResponse getOneForAdmin(Long adminId, Long inquiryId) {
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new NotFoundException("admin not found"));
+
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new NotFoundException("inquiry not found"));
+
+        return toResponse(inquiry, admin.getAdminLevel());
     }
 
     @Transactional
