@@ -21,16 +21,13 @@ public class AdminStaffController {
 
     @PutMapping({"/staff", "/staff/"})
     public ResponseEntity<StaffAdminLevelUpdateResponse> updateStaffPermission(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId, // X-ADMIN-ID 헤더 넣는 부분
             @RequestBody StaffAdminLevelUpdateRequest request // response body 받는 부분
     ) {
-        return ResponseEntity.ok(adminStaffService.updateAdminLevel(adminId, request));
+        return ResponseEntity.ok(adminStaffService.updateAdminLevel(request));
     }
     @GetMapping({"/staff", "/staff/"})
-    public ResponseEntity<List<Map<String, Object>>> getStaffList(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId
-    ) {
-        return ResponseEntity.ok(adminStaffService.getStaffList(adminId));
+    public ResponseEntity<List<Map<String, Object>>> getStaffList() {
+        return ResponseEntity.ok(adminStaffService.getStaffList());
     }
 
 }

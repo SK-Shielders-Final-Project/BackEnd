@@ -112,6 +112,31 @@ public class FileService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public Resource loadAsResource(String filePath) {
+        if (filePath == null || filePath.isBlank()) {
+            throw new BadRequestException("file path required");
+        }
+
+        Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
+        Path targetPath = baseDir.resolve(filePath).normalize();
+
+//        if (!targetPath.startsWith(baseDir)) {
+//            throw new BadRequestException("Invalid file path (Path Traversal attempt)");
+//        }
+
+        try {
+            Resource resource = new UrlResource(targetPath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                return resource;
+            } else {
+                throw new NotFoundException("File not found on disk: " + filePath);
+            }
+        } catch (MalformedURLException e) {
+            throw new BadRequestException("Invalid file URL for path: " + filePath);
+        }
+    }
+
     private void validate(String category, MultipartFile f) {
         if (category == null || category.isBlank()) throw new BadRequestException("category required");
         if (f == null || f.isEmpty()) throw new BadRequestException("file required");

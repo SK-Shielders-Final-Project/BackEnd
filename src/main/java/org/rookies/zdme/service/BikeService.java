@@ -34,14 +34,7 @@ public class BikeService {
     }
 
     @Transactional
-    public BikeStatusUpdateResponse updateStatus(Long adminId, Long bikeId, String statusKorean) {
-        User admin = userRepository.findById(adminId)
-                .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        if (admin.getAdminLevel() == null || admin.getAdminLevel() < 1) {
-            throw new ForbiddenException("admin permission required");
-        }
-
+    public BikeStatusUpdateResponse updateStatus(Long bikeId, String statusKorean) {
         Bike bike = bikeRepository.findById(bikeId)
                 .orElseThrow(() -> new NotFoundException("bike not found"));
 

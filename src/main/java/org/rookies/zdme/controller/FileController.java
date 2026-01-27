@@ -32,7 +32,6 @@ public class FileController {
     // 파일 업로드 (사용자) - category 고정
     @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<FileUploadResponse> upload(
-            @RequestHeader(name = "X-USER-ID") Long userId,
             @RequestPart("file") MultipartFile file
     ) {
         File saved = fileService.save(FIXED_CATEGORY, file);
@@ -56,25 +55,16 @@ public class FileController {
     // 사용자 다운로드: 본인 문의에 연결된 파일만 허용
     @GetMapping("/user/files/{fileId}/download")
     public ResponseEntity<Resource> downloadForUser(
-            @RequestHeader(name = "X-USER-ID") Long userId,
             @PathVariable Long fileId
     ) {
-        boolean owned = inquiryRepository.existsByFile_FileIdAndUser_UserId(fileId, userId);
-        if (!owned) {
-            throw new ForbiddenException("forbidden: not your file");
-        }
         return buildDownloadResponse(fileId);
     }
 
     // 관리자 다운로드: 임시 검증 (X-ADMIN-ID == 1만 허용)
     @GetMapping("/admin/files/{fileId}/download")
     public ResponseEntity<Resource> downloadForAdmin(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
             @PathVariable Long fileId
     ) {
-        if (adminId == null || adminId != 1L) {
-            throw new ForbiddenException("forbidden: admin validation failed");
-        }
         return buildDownloadResponse(fileId);
     }
 

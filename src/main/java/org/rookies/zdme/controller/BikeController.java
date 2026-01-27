@@ -26,11 +26,10 @@ public class BikeController {
 
     @PutMapping("/admin/bike")
     public ResponseEntity<?> updateStatus(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId, // X-ADMIN-ID
             @RequestBody org.rookies.zdme.dto.bike.BikeStatusUpdateRequest request // response body
     ) {
         return ResponseEntity.ok(
-                bikeService.updateStatus(adminId, request.getBike_id(), request.getStatus())
+                bikeService.updateStatus(request.getBike_id(), request.getStatus())
         );
     }
 }

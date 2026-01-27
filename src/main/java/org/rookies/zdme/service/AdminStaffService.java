@@ -31,19 +31,11 @@ public class AdminStaffService {
      * ]
      */
     @Transactional(readOnly = true)
-    public List<Map<String, Object>> getStaffList(Long adminId) {
-        User requester = userRepository.findById(adminId)
-                .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        Integer requesterLev = requester.getAdminLevel();
-        if (requesterLev == null || requesterLev != 2) {
-            throw new ForbiddenException("only super admin can view staff list");
-        }
-
+    public List<Map<String, Object>> getStaffList() {
         // ✅ 전체 유저 조회
         List<User> users = userRepository.findAll();
 
-        System.out.println("GET staffList adminId=" + adminId + ", requesterLev=" + requesterLev);
+        System.out.println("GET staffList (adminId validation removed)");
 
         // ✅ 프론트에서 쓰기 쉬운 형태로 변환
         return users.stream()
@@ -57,16 +49,7 @@ public class AdminStaffService {
     }
 
     @Transactional
-    public StaffAdminLevelUpdateResponse updateAdminLevel(Long adminId, StaffAdminLevelUpdateRequest req) {
-        User requester = userRepository.findById(adminId)
-                .orElseThrow(() -> new NotFoundException("admin not found"));
-
-        Integer requesterLev = requester.getAdminLevel();
-        if (requesterLev == null || requesterLev != 2) {
-            System.out.println("adminId=" + adminId + ", requesterLev=" + requesterLev);
-            throw new ForbiddenException("only super admin can update staff permission");
-        }
-
+    public StaffAdminLevelUpdateResponse updateAdminLevel(StaffAdminLevelUpdateRequest req) {
         validateAdminLev(req.getAdmin_level());
 
         User target = userRepository.findById(req.getUser_id())

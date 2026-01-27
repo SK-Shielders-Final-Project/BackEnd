@@ -20,46 +20,37 @@ public class InquiryController {
     // 문의사항 작성 (사용자)
     @PostMapping("/user/inquiry/write")
     public ResponseEntity<InquiryResponse> write(
-            @RequestHeader(name = "X-USER-ID") Long userId,
             @RequestBody InquiryWriteRequest request
     ) {
-        InquiryResponse res = inquiryService.write(userId, request);
+        InquiryResponse res = inquiryService.write(request);
         return ResponseEntity.ok(res);
     }
 
-    // ✅ 문의사항 수정 (사용자)
     @PutMapping("/user/inquiry/modify")
     public ResponseEntity<InquiryModifyResponse> modify(
-            @RequestHeader(name = "X-USER-ID") Long userId,
             @RequestBody InquiryModifyRequest request
     ) {
-        return ResponseEntity.ok(inquiryService.modify(userId, request));
+        return ResponseEntity.ok(inquiryService.modify(request));
     }
 
     // 사용자 측 문의사항 조회
     @PostMapping("/user/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listByUser(
-            @RequestHeader(name = "X-USER-ID") Long userId
-    ) {
-        return ResponseEntity.ok(inquiryService.listByUser(userId));
+    public ResponseEntity<List<InquiryResponse>> listByUser() {
+        return ResponseEntity.ok(inquiryService.listAllInquiries());
     }
 
     // 관리자 측 문의사항 전체 조회
     @PostMapping("/admin/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listForAdmin(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId
-    ) {
-        return ResponseEntity.ok(inquiryService.listAllForAdmin(adminId));
+    public ResponseEntity<List<InquiryResponse>> listForAdmin() {
+        return ResponseEntity.ok(inquiryService.listAllForAdmin());
     }
 
     // 관리자 답변 작성
     @PutMapping("/admin/inquiry")
     public ResponseEntity<InquiryResponse> reply(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
             @RequestBody InquiryReplyRequest request
     ) {
         InquiryResponse res = inquiryService.reply(
-                adminId,
                 request.getInquiry_id(),
                 request.getAdmin_reply()
         );
@@ -69,22 +60,20 @@ public class InquiryController {
     // 사용자 문의 삭제
     @PostMapping("/user/inquiry/delete")
     public ResponseEntity<InquiryDeleteResponse> deleteByUser(
-            @RequestHeader(name = "X-USER-ID") Long userId,
             @RequestBody InquiryDeleteRequest request
     ) {
         return ResponseEntity.ok(
-                inquiryService.deleteByUser(userId, request.getInquiry_id())
+                inquiryService.deleteByUser(request.getInquiry_id())
         );
     }
 
     // 관리자 문의 삭제
     @PostMapping("/admin/inquiry/delete")
     public ResponseEntity<InquiryDeleteResponse> deleteByAdmin(
-            @RequestHeader(name = "X-ADMIN-ID") Long adminId,
             @RequestBody InquiryDeleteRequest request
     ) {
         return ResponseEntity.ok(
-                inquiryService.deleteByAdmin(adminId, request.getInquiry_id())
+                inquiryService.deleteByAdmin(request.getInquiry_id())
         );
     }
 
