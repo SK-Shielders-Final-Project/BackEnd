@@ -1,21 +1,16 @@
 spring.application.name=zdme
 server.port = 8080
 
-# DB
+# DB ??
 spring.datasource.url=jdbc:oracle:thin:@//localhost:1521/xepdb1
 spring.datasource.username=zdme
 spring.datasource.password=zdme
 spring.datasource.driver-class-name=oracle.jdbc.OracleDriver
 
-spring.jpa.database-platform=org.hibernate.dialect.OracleDialect
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.properties.hibernate.show_sql=true
-spring.jpa.properties.hibernate.format_sql=true
-
 # JPA ??
-#spring.jpa.hibernate.ddl-auto=none
-#spring.jpa.show-sql=true
-#spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
 
 # Spring Session JDBC ??? ?? ??
 spring.session.jdbc.initialize-schema=never
@@ -25,14 +20,12 @@ spring.sql.init.mode=never
 jwt.secret=your_placeholder_jwt_secret_here
 jwt.expiration-ms=86400000
 
-
-# toss payments
-toss.secret-key=test_sk_QbgMGZzorzbzwkJJ4yY2rl5E1em4
-
-# Email (Gmail SMTP)
+# Email (Gmail SMTP) 설정
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
 spring.mail.username=knm6777@gmail.com
-spring.mail.password=mrerfdbdpcvdnwlx
+spring.mail.password=
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
+
+
