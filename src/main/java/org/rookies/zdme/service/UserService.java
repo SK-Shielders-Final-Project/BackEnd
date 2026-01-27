@@ -129,7 +129,7 @@ public class UserService implements UserDetailsService {
         }
 
         // 저장된 사용자의 ID를 가져오기 위한 다시 한번 SQL Injection 가능한 쿼리
-        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, total_point, pass, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, total_point, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
         try {
             List<Object[]> result = entityManager.createNativeQuery(selectAfterInsertSql).getResultList();
             if (result.isEmpty()) {
