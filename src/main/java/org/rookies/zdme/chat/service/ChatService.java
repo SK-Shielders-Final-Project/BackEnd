@@ -6,6 +6,8 @@ import org.rookies.zdme.llm.client.LlmClient;
 import org.rookies.zdme.llm.dto.LlmRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.List; // List 임포트 추가
+
 @Service
 public class ChatService {
 
@@ -17,20 +19,22 @@ public class ChatService {
 
     public ChatResponseDto chat(ChatRequestDto req) {
 
-        // 1️⃣ LLM 요청 생성 (req.message() 내부에서 값들을 꺼내야 함)
-        LlmRequest llmRequest = new LlmRequest(
-                new LlmRequest.Message(
-                        "user",
-                        req.message().userId(),  // 👈 수정: message 객체 안의 userId
-                        req.message().content() // 👈 수정: message 객체 안의 content
-                ));
+        // 1️⃣ 개별 메시지 객체 생성
+        LlmRequest.Message message = new LlmRequest.Message(
+                "user",
+                req.message().userId(),
+                req.message().content()
+        );
 
-        // 2️⃣ LLM 호출
+        // 2️⃣ 리스트로 감싸서 LlmRequest 생성 (이 부분이 핵심입니다!)
+        LlmRequest llmRequest = new LlmRequest(List.of(message));
+
+        // 3️⃣ LLM 호출
         var llmResponse = llmClient.generate(llmRequest);
 
-        // 3️⃣ userId 그대로 응답에 포함
+        // 4️⃣ 응답 반환
         return new ChatResponseDto(
-                req.message().userId(), // 👈 수정: 여기서도 message 객체 안의 userId 사용
+                req.message().userId(),
                 llmResponse.text(),
                 llmResponse.model()
         );
