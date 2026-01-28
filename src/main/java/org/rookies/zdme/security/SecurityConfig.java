@@ -56,15 +56,7 @@ public class SecurityConfig {
                                 "/swagger-ui.html"
                         ).permitAll()
 
-                        // 기존 permitAll 유지
-                        .requestMatchers(
-                                "/api/user/auth/login",
-                                "/api/user/auth/signup",
-                                "/api/admin/auth/login",
-                                "/.well-known/jwks.json",
-                                "/api/auth/password-reset/**",
-                                "/error"
-                        ).permitAll()
+                        // 로그인 API 경로 등은 인증 없이 누구나 접근 가능하게 설정 (Permit All)
                         .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
 
                         // 그 외 모든 요청은 반드시 인증

@@ -31,6 +31,9 @@ public class JwtUtil implements Serializable {
     @Value("${jwt.expiration-ms}")
     private long jwtExpirationMs;
 
+    @Value("${jwt.refresh-expiration-ms}")
+    private long jwtRefreshExpirationMs;
+
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private String keyId;
@@ -134,6 +137,11 @@ public class JwtUtil implements Serializable {
         return doGenerateToken(claims, userDetails.getUsername());
     }
 
+    public String generateRefreshToken(UserDetails userDetails) {
+        Map<String, Object> claims = new HashMap<>();
+        return doGenerateRefreshToken(claims, userDetails.getUsername());
+    }
+
     /**
      * JWT 토큰 생성
      * @param claims
@@ -147,6 +155,16 @@ public class JwtUtil implements Serializable {
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
+                .signWith(privateKey, SignatureAlgorithm.RS256).compact();
+    }
+
+    private String doGenerateRefreshToken(Map<String, Object> claims, String subject) {
+        return Jwts.builder()
+                .setHeaderParam("kid", this.keyId)
+                .setClaims(claims)
+                .setSubject(subject)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + jwtRefreshExpirationMs))
                 .signWith(privateKey, SignatureAlgorithm.RS256).compact();
     }
 
