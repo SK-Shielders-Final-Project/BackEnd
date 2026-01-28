@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Profile("prod")
@@ -25,6 +26,17 @@ public class RealLlmClient implements LlmClient {
     @Override
     @SuppressWarnings("unchecked")
     public LlmResponse generate(LlmRequest request) {
+        Map<String, Object> messageBody = new HashMap<>();
+        // request에서 데이터를 꺼내서 직접 넣습니다.
+        messageBody.put("role", request.message().role());
+        messageBody.put("user_id", request.message().userId()); // "user_id" 키 이름 주의
+        messageBody.put("content", request.message().content());
+
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("message", messageBody);
+
+        System.out.println("🚀 강제로 만든 Payload: " + payload);
+
         // ⚠️ 아래는 예시 스펙: POST /generate -> { "text": "...", "model": "..." }
         Map<String, Object> res = restClient.post()
                 .uri("/api/generate")

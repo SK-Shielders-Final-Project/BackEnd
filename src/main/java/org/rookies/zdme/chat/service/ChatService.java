@@ -27,7 +27,7 @@ public class ChatService {
         );
 
         // 2️⃣ 리스트로 감싸서 LlmRequest 생성 (이 부분이 핵심입니다!)
-        LlmRequest llmRequest = new LlmRequest(List.of(message));
+        LlmRequest llmRequest = new LlmRequest(message);
 
         // 3️⃣ LLM 호출
         var llmResponse = llmClient.generate(llmRequest);

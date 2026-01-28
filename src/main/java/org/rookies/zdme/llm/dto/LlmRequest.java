@@ -5,7 +5,7 @@ import java.util.List;
 
 public record LlmRequest(
         @JsonProperty("message")
-        List<Message> messages
+        Message message
 ) {
     public record Message(
             String role,
