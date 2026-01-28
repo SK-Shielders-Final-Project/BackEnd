@@ -2,6 +2,7 @@ package org.rookies.zdme.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.rookies.zdme.service.DownloadableFile;
 import org.rookies.zdme.service.FileService;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -24,23 +25,24 @@ public class FileDownloadController {
     private final FileService fileService;
 
     @GetMapping("/user/files/download")
-    public ResponseEntity<Resource> downloadFile(@RequestParam("file") String file, HttpServletRequest request) {
-        return download(file, request);
+    public ResponseEntity<Resource> downloadFile(@RequestParam("file") String fileParam, HttpServletRequest request) {
+        return download(fileParam, request);
     }
 
     @GetMapping("/admin/files/download")
     public ResponseEntity<Resource> downloadFileForAdmin(
-            @RequestParam("file") String file,
+            @RequestParam("file") String fileParam,
             @RequestParam(required = false) Integer admin_level,
             HttpServletRequest request
     ) {
         // TODO: admin_level에 따른 권한 검증 로직 추가 가능
-        return download(file, request);
+        return download(fileParam, request);
     }
 
-    private ResponseEntity<Resource> download(String file, HttpServletRequest request) {
-        // file 매개변수는 '카테고리/날짜/파일명.확장자' 형태의 전체 경로를 기대합니다.
-        Resource resource = fileService.loadAsResource(file);
+    private ResponseEntity<Resource> download(String fileParam, HttpServletRequest request) {
+        DownloadableFile downloadableFile = fileService.resolveAndLoadResourceByParam(fileParam);
+        Resource resource = downloadableFile.getResource();
+        String originalFilename = downloadableFile.getFilename();
 
         String contentType = null;
         try {
@@ -53,7 +55,6 @@ public class FileDownloadController {
             contentType = "application/octet-stream";
         }
 
-        String originalFilename = file.substring(file.lastIndexOf("/") + 1);
         String encodedFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8).replace("+", "%20");
 
         return ResponseEntity.ok()

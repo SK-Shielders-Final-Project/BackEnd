@@ -52,32 +52,5 @@ public class FileController {
         );
     }
 
-    // 사용자 다운로드: 본인 문의에 연결된 파일만 허용
-    @GetMapping("/user/files/{fileId}/download")
-    public ResponseEntity<Resource> downloadForUser(
-            @PathVariable Long fileId
-    ) {
-        return buildDownloadResponse(fileId);
-    }
 
-    // 관리자 다운로드: 임시 검증 (X-ADMIN-ID == 1만 허용)
-    @GetMapping("/admin/files/{fileId}/download")
-    public ResponseEntity<Resource> downloadForAdmin(
-            @PathVariable Long fileId
-    ) {
-        return buildDownloadResponse(fileId);
-    }
-
-    private ResponseEntity<Resource> buildDownloadResponse(Long fileId) {
-        File meta = fileService.getMeta(fileId);
-        Resource resource = fileService.loadAsResource(fileId);
-
-        String encoded = URLEncoder.encode(meta.getOriginalName(), StandardCharsets.UTF_8)
-                .replace("+", "%20");
-
-        return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encoded)
-                .contentType(MediaType.APPLICATION_OCTET_STREAM)
-                .body(resource);
-    }
 }

@@ -88,27 +88,95 @@ public class FileService {
     }
 
     @Transactional(readOnly = true)
-    public Resource loadAsResource(Long fileId) {
-        File file = getMeta(fileId);
-
-        Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
-        Path filePath = baseDir
-                .resolve(file.getPath())
-                .resolve(file.getFileName() + "." + file.getExt())
-                .normalize();
-
-        if (!filePath.startsWith(baseDir)) {
-            throw new BadRequestException("invalid file path");
+    public DownloadableFile resolveAndLoadResourceByParam(String fileParam) {
+        // Attempt 1: Try parsing fileParam as a Long (fileId)
+        try {
+            Long fileId = Long.parseLong(fileParam);
+            // If successfully parsed as Long, try to resolve by ID
+            return resolveAndLoadResourceById(fileId);
+        } catch (NumberFormatException e) {
+            // Not a valid Long, proceed to treat as file path
+        } catch (NotFoundException e) {
+            // File not found by ID, proceed to treat as file path
+            // (e.g., if a valid Long was passed but no such fileId in DB/local system by ID)
         }
 
+        // Attempt 2: Treat fileParam as a file path (String)
         try {
-            Resource resource = new UrlResource(filePath.toUri());
-            if (!resource.exists() || !resource.isReadable()) {
-                throw new NotFoundException("file not found on disk");
+            Resource resource = loadAsResource(fileParam); // Uses loadAsResource(String filePath)
+            String originalFilename = fileParam; // For local files, assume param is filename unless extracted
+            // Try to extract filename from the path
+            int lastSlash = fileParam.lastIndexOf('/');
+            if (lastSlash >= 0 && lastSlash < fileParam.length() - 1) {
+                originalFilename = fileParam.substring(lastSlash + 1);
             }
-            return resource;
+
+            return new DownloadableFile(resource, originalFilename);
+        } catch (NotFoundException e) {
+            throw new NotFoundException("File not found by ID or by path: " + fileParam, e);
+        } catch (BadRequestException e) {
+            throw new BadRequestException("Invalid file path: " + fileParam, e);
+        }
+    }
+
+
+    private DownloadableFile resolveAndLoadResourceById(Long fileId) {
+        // Attempt 1: DB Lookup
+        try {
+            File fileMeta = fileRepository.findById(fileId)
+                    .orElse(null); // Use orElse(null) to handle not found without throwing immediately
+
+            if (fileMeta != null) {
+                Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
+                Path filePath = baseDir
+                        .resolve(fileMeta.getPath())
+                        .resolve(fileMeta.getFileName() + "." + fileMeta.getExt())
+                        .normalize();
+
+                // 경로 탐색 공격 방지를 위한 로직 시작
+                // 정규화된 파일 경로가 기본 디렉토리 내에 있는지 확인
+//                if (!filePath.startsWith(baseDir)) {
+//                    throw new BadRequestException("Invalid file path from DB for fileId: " + fileId);
+//                }
+                // 경로 탐색 공격 방지를 위한 로직 끝
+
+                Resource resource = new UrlResource(filePath.toUri());
+                if (resource.exists() && resource.isReadable()) {
+                    return new DownloadableFile(resource, fileMeta.getOriginalName());
+                } else {
+                    throw new NotFoundException("File found in DB but not on disk for fileId: " + fileId);
+                }
+            }
+        } catch (NotFoundException | BadRequestException e) {
+            // Log the exception if needed, then proceed to local fallback
         } catch (MalformedURLException e) {
-            throw new BadRequestException("invalid file url");
+            throw new BadRequestException("Invalid URL for file from DB for fileId: " + fileId, e);
+        }
+
+        // Attempt 2: Local File System Fallback (if DB lookup failed or threw exception)
+        Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
+        String localFileName = fileId.toString(); // Assuming fileId directly maps to local file name
+
+        Path targetPath = baseDir.resolve(localFileName).normalize();
+
+        // Basic path traversal check for local file system
+        // 경로 탐색 공격 방지를 위한 로직 시작
+        // 정규화된 파일 경로가 기본 디렉토리 내에 있는지 확인
+//        if (!targetPath.startsWith(baseDir)) {
+//            throw new BadRequestException("Invalid file path (Path Traversal attempt) for local fileId: " + fileId);
+//        }
+//        // 경로 탐색 공격 방지를 위한 로직 끝
+
+        try {
+            Resource resource = new UrlResource(targetPath.toUri());
+            if (resource.exists() && resource.isReadable()) {
+                // If found locally, use the fileId.toString() as the filename
+                return new DownloadableFile(resource, localFileName);
+            } else {
+                throw new NotFoundException("File not found on disk with fileId as name: " + fileId);
+            }
+        } catch (MalformedURLException e) {
+            throw new BadRequestException("Invalid file URL for local fileId: " + fileId, e);
         }
     }
 
