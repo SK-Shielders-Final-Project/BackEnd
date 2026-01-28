@@ -8,4 +8,5 @@ import lombok.Setter;
 public class InquiryDeleteRequest {
     private Long user_id;
     private Long inquiry_id;
+    private Integer admin_level;
 }

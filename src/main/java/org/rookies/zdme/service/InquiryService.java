@@ -69,22 +69,32 @@ public class InquiryService {
     }
 
     @Transactional(readOnly = true)
-    public List<InquiryResponse> listAllForAdmin() { // adminId parameter removed
+    public List<InquiryResponse> listAllForAdmin(Integer adminLevel) { // adminId parameter removed
         return inquiryRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(inq -> toResponse(inq, 0)) // adminLevel default to 0
+                .map(inq -> toResponse(inq, adminLevel)) // adminLevel default to 0
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public InquiryResponse getInquiryById(Long inquiryId, Integer adminLevel) {
+        if (inquiryId == null) {
+            throw new IllegalArgumentException("inquiryId is required");
+        }
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new NotFoundException("Inquiry not found with id: " + inquiryId));
+        return toResponse(inquiry, adminLevel); // Assuming adminLevel is 0 for a standard response.
+    }
+
     @Transactional
-    public InquiryResponse reply(Long inquiryId, String adminReply) { // adminId parameter removed
+    public InquiryResponse reply(Long inquiryId, String adminReply, Integer adminLevel) { // adminId parameter removed
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));
 
         inquiry.setAdminReply(adminReply);
         Inquiry saved = inquiryRepository.save(inquiry);
 
-        return toResponse(saved, 0); // adminLevel default to 0
+        return toResponse(saved, adminLevel); // adminLevel default to 0
     }
 
     @Transactional
@@ -157,8 +167,10 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryDeleteResponse deleteByAdmin(Long inquiryId) { // adminId parameter and validation removed
+    public InquiryDeleteResponse deleteByAdmin(Long inquiryId, Integer adminLevel) { // adminId parameter and validation removed
         if (inquiryId == null) throw new IllegalArgumentException("inquiry_id is required");
+
+        // TODO: Add business logic for adminLevel validation if needed
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));

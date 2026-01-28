@@ -5,8 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class InquiryReplyRequest {
-    private Long inquiry_id;
-    private String admin_reply;
+public class AdminInquiryListRequest {
     private Integer admin_level;
 }

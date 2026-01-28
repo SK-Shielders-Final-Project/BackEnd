@@ -43,8 +43,20 @@ public class InquiryController {
 
     // 관리자 측 문의사항 전체 조회
     @PostMapping("/admin/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listForAdmin() {
-        return ResponseEntity.ok(inquiryService.listAllForAdmin());
+    public ResponseEntity<List<InquiryResponse>> listForAdmin(
+            @RequestBody AdminInquiryListRequest request
+    ) {
+        return ResponseEntity.ok(inquiryService.listAllForAdmin(request.getAdmin_level()));
+    }
+
+    // 관리자 측 문의사항 개별 조회
+    @PostMapping("/admin/inquiry/{inquiry_id}")
+    public ResponseEntity<InquiryResponse> getInquiryForAdmin(
+            @PathVariable Long inquiry_id,
+            @RequestBody AdminInquiryDetailRequest request
+    ) {
+        InquiryResponse res = inquiryService.getInquiryById(inquiry_id, request.getAdmin_level());
+        return ResponseEntity.ok(res);
     }
 
     // 관리자 답변 작성
@@ -54,7 +66,8 @@ public class InquiryController {
     ) {
         InquiryResponse res = inquiryService.reply(
                 request.getInquiry_id(),
-                request.getAdmin_reply()
+                request.getAdmin_reply(),
+                request.getAdmin_level()
         );
         return ResponseEntity.ok(res);
     }
@@ -75,7 +88,7 @@ public class InquiryController {
             @RequestBody InquiryDeleteRequest request
     ) {
         return ResponseEntity.ok(
-                inquiryService.deleteByAdmin(request.getInquiry_id())
+                inquiryService.deleteByAdmin(request.getInquiry_id(), request.getAdmin_level())
         );
     }
 
