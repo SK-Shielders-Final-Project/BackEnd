@@ -18,7 +18,7 @@ public class BikeController {
         this.bikeService = bikeService;
     }
 
-    @PostMapping({"/bikes", "/bikes/"})
+    @PostMapping({"/bikes"})
     public ResponseEntity<List<BikeResponse>> list() {
         return ResponseEntity.ok(bikeService.listAll());
     }
