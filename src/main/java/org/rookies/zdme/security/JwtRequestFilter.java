@@ -57,19 +57,20 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String username = null;
         String jwtToken = null;
 
-        // JWT 토큰은 "Bearer [토큰]" 형식 -> "Bearer "를 제거하고 실제 토큰 값만 추출
-        if (requestTokenHeader != null && requestTokenHeader.startsWith("Bearer ")) {
-            jwtToken = requestTokenHeader.substring(7); // "Bearer " 이후의 문자열 추출
-            try {
-                // 토큰으로부터 사용자 이름을 추출
-                username = jwtUtil.getUsernameFromToken(jwtToken);
-            } catch (IllegalArgumentException e) {
-                System.out.println("JWT 토큰을 가져올 수 없습니다.");
-            } catch (ExpiredJwtException e) {
-                System.out.println("JWT 토큰이 만료되었습니다.");
+        if (requestTokenHeader != null) {
+            if (requestTokenHeader.startsWith("Bearer ")) {
+                jwtToken = requestTokenHeader.substring(7); // "Bearer " 이후의 문자열 추출
+                try {
+                    // 토큰으로부터 사용자 이름을 추출
+                    username = jwtUtil.getUsernameFromToken(jwtToken);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("JWT 토큰을 가져올 수 없습니다.");
+                } catch (ExpiredJwtException e) {
+                    System.out.println("JWT 토큰이 만료되었습니다.");
+                }
+            } else {
+                logger.warn("Authorization 헤더가 'Bearer '로 시작하지 않습니다.");
             }
-        } else {
-            logger.warn("JWT 토큰이 Bearer 문자열로 시작하지 않습니다.");
         }
 
         // 토큰을 성공적으로 가져왔고, 현재 SecurityContext에 인증 정보가 없는 경우 검증 진행

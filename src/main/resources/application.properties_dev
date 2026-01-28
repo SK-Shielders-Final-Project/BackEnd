@@ -18,7 +18,8 @@ spring.sql.init.mode=never
 
 ## JWT Settings
 jwt.secret=your_placeholder_jwt_secret_here
-jwt.expiration-ms=86400000
+jwt.expiration-ms=3600000 # 한시간
+jwt.refresh-expiration-ms=604800000 # 일주일
 
 # Email (Gmail SMTP) 설정
 spring.mail.host=smtp.gmail.com

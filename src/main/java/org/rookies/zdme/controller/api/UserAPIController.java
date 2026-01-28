@@ -61,9 +61,11 @@ public class UserAPIController {
             authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
             userService.checkUserRole(authenticationRequest.getUsername());
             final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
-            final String token = jwtUtil.generateToken(userDetails);
+            final String accessToken = jwtUtil.generateToken(userDetails);
+            final String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+            userService.saveRefreshToken(userDetails.getUsername(), refreshToken);
             final Long userId = ((User) userDetails).getUserId();
-            return ResponseEntity.ok(new LoginResponse(token, userId));
+            return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, userId));
         } catch (DisabledException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "사용자 계정이 비활성화되었습니다."));
         } catch (UsernameNotFoundException e) { // For security, treat UsernameNotFound as invalid credentials

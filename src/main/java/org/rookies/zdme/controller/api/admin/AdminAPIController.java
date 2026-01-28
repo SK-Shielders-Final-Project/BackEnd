@@ -49,9 +49,11 @@ public class AdminAPIController {
 
         final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
         final Long userId = ((User) userDetails).getUserId();
-        final String token = jwtUtil.generateToken(userDetails);
+        final String accessToken = jwtUtil.generateToken(userDetails);
+        final String refreshToken = jwtUtil.generateRefreshToken(userDetails);
+        userService.saveRefreshToken(userDetails.getUsername(), refreshToken);
 
-        return ResponseEntity.ok(new LoginResponse(token, userId));
+        return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, userId));
     }
 
     /**
