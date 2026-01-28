@@ -13,6 +13,9 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
+import jakarta.persistence.*;
+import lombok.*;
+
 @Entity
 @Table(name = "users")
 @Getter
@@ -113,5 +116,21 @@ public class User implements UserDetails {
 //            throw new IllegalStateException("회수할 포인트가 부족합니다.");
 //        }
         this.totalPoint += amount;
+    }
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (totalPoint == null) totalPoint = 0L;
+        if (adminLevel == null) adminLevel = 0;
+    }
+
+    @PreUpdate
+    void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
+
+    public void setAdminLevel(Integer adminLevel) {
+        this.adminLevel = adminLevel;
     }
 }
