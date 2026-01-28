@@ -133,5 +133,5 @@ public class User implements UserDetails {
     public void setAdminLevel(Integer adminLevel) {
         this.adminLevel = adminLevel;
     }
-    
+
 }

@@ -19,13 +19,13 @@ public class AdminStaffController {
         this.adminStaffService = adminStaffService;
     }
 
-    @PutMapping({"/staff", "/staff/"})
+    @PutMapping({"/staff"})
     public ResponseEntity<StaffAdminLevelUpdateResponse> updateStaffPermission(
             @RequestBody StaffAdminLevelUpdateRequest request // response body 받는 부분
     ) {
         return ResponseEntity.ok(adminStaffService.updateAdminLevel(request));
     }
-    @GetMapping({"/staff", "/staff/"})
+    @GetMapping({"/staff"})
     public ResponseEntity<List<Map<String, Object>>> getStaffList() {
         return ResponseEntity.ok(adminStaffService.getStaffList());
     }
