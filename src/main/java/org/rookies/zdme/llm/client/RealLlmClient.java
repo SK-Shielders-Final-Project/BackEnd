@@ -26,7 +26,9 @@ public class RealLlmClient implements LlmClient {
     public RealLlmClient(@Value("${llm.base-url}") String baseUrl) {
         // base-url 끝에 슬래시가 있다면 제거하여 url 조합 시 이중 슬래시 방지
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
-        this.httpClient = HttpClient.newHttpClient();
+        this.httpClient = HttpClient.newBuilder()
+            .version(HttpClient.Version.HTTP_1_1)
+            .build();
     }
 
     @Override
