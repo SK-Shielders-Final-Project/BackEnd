@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 
 public record LlmRequest(
-        List<Message> messages
+        Message messages
 ) {
     public record Message(
             String role,
