@@ -35,8 +35,10 @@ public class InquiryController {
 
     // 사용자 측 문의사항 조회
     @PostMapping("/user/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listByUser() {
-        return ResponseEntity.ok(inquiryService.listAllInquiries());
+    public ResponseEntity<List<InquiryResponse>> listByUser(
+            @RequestBody InquiryListRequest request
+    ) {
+        return ResponseEntity.ok(inquiryService.listInquiriesByUser(request.getUser_id()));
     }
 
     // 관리자 측 문의사항 전체 조회
@@ -63,7 +65,7 @@ public class InquiryController {
             @RequestBody InquiryDeleteRequest request
     ) {
         return ResponseEntity.ok(
-                inquiryService.deleteByUser(request.getInquiry_id())
+                inquiryService.deleteByUser(request.getUser_id(), request.getInquiry_id())
         );
     }
 

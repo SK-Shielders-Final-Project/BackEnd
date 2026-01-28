@@ -5,7 +5,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class InquiryDeleteRequest {
+public class InquiryListRequest {
     private Long user_id;
-    private Long inquiry_id;
 }
