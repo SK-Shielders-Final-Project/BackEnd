@@ -4,6 +4,7 @@ import org.rookies.zdme.llm.dto.LlmRequest;
 import org.rookies.zdme.llm.dto.LlmResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -27,6 +28,7 @@ public class RealLlmClient implements LlmClient {
         // ⚠️ 아래는 예시 스펙: POST /generate -> { "text": "...", "model": "..." }
         Map<String, Object> res = restClient.post()
                 .uri("/api/generate")
+                .contentType(MediaType.APPLICATION_JSON)
                 .body(request)
                 .retrieve()
                 .body(Map.class);
