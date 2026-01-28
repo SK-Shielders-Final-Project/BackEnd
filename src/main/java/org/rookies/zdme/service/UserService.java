@@ -47,38 +47,29 @@ public class UserService implements UserDetailsService {
         }
 
         String checkUsernameSql = "SELECT user_id FROM users WHERE username = '" + username + "'";
-        try {
-            List<Object[]> existingUsers = entityManager.createNativeQuery(checkUsernameSql).getResultList();
-            if (!existingUsers.isEmpty()) {
-                throw new IllegalStateException("이미 존재하는 아이디입니다.");
-            }
-        } catch (Exception e) {
-            throw new RuntimeException("사용자 중복 확인 중 오류 발생: " + e.getMessage(), e);
+
+        List<Object[]> existingUsers = entityManager.createNativeQuery(checkUsernameSql).getResultList();
+        if (!existingUsers.isEmpty()) {
+            throw new IllegalStateException("이미 존재하는 아이디입니다.");
         }
 
         String email = (String) requestData.get("email");
         if (email != null && !email.trim().isEmpty()) {
             String checkEmailSql = "SELECT user_id FROM users WHERE email = '" + email + "'";
-            try {
-                List<Object[]> existingEmails = entityManager.createNativeQuery(checkEmailSql).getResultList();
-                if (!existingEmails.isEmpty()) {
-                    throw new IllegalStateException("이미 존재하는 이메일입니다.");
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("이메일 중복 확인 중 오류 발생: " + e.getMessage(), e);
+
+            List<Object[]> existingEmails = entityManager.createNativeQuery(checkEmailSql).getResultList();
+            if (!existingEmails.isEmpty()) {
+                throw new IllegalStateException("이미 존재하는 이메일입니다.");
             }
         }
 
         String phone = (String) requestData.get("phone");
         if (phone != null && !phone.trim().isEmpty()) {
             String checkPhoneSql = "SELECT user_id FROM users WHERE phone = '" + phone + "'";
-            try {
-                List<Object[]> existingPhones = entityManager.createNativeQuery(checkPhoneSql).getResultList();
-                if (!existingPhones.isEmpty()) {
-                    throw new IllegalStateException("이미 존재하는 휴대폰 번호입니다.");
-                }
-            } catch (Exception e) {
-                throw new RuntimeException("휴대폰 번호 중복 확인 중 오류 발생: " + e.getMessage(), e);
+
+            List<Object[]> existingPhones = entityManager.createNativeQuery(checkPhoneSql).getResultList();
+            if (!existingPhones.isEmpty()) {
+                throw new IllegalStateException("이미 존재하는 휴대폰 번호입니다.");
             }
         }
 
@@ -118,28 +109,18 @@ public class UserService implements UserDetailsService {
                 escapeSql(newUser.getPhone()) + "', " +
                 newUser.getTotalPoint() + ", " +
                 newUser.getAdminLevel() + ", " +
-                // newUser.getAdminLevel() + ", '" +
-                // DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "')";
                 "TO_DATE('" + DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").format(newUser.getCreatedAt()) + "', 'YYYY-MM-DD HH24:MI:SS'))";
 
-        try {
-            entityManager.createNativeQuery(insertSql).executeUpdate();
-        } catch (Exception e) {
-            throw new RuntimeException("사용자 저장 중 오류 발생: " + e.getMessage(), e);
-        }
+        entityManager.createNativeQuery(insertSql).executeUpdate();
 
         // 저장된 사용자의 ID를 가져오기 위한 다시 한번 SQL Injection 가능한 쿼리
         String selectAfterInsertSql = "SELECT user_id, username, name, password, email, phone, total_point, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
-        try {
-            List<Object[]> result = entityManager.createNativeQuery(selectAfterInsertSql).getResultList();
-            if (result.isEmpty()) {
-                throw new RuntimeException("저장된 사용자 정보를 찾을 수 없습니다.");
-            }
-            return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("저장된 사용자를 찾을 수 없습니다."));
 
-        } catch (Exception e) {
-            throw new RuntimeException("저장 후 사용자 정보 조회 중 오류 발생: " + e.getMessage(), e);
+        List<Object[]> result = entityManager.createNativeQuery(selectAfterInsertSql).getResultList();
+        if (result.isEmpty()) {
+            throw new RuntimeException("저장된 사용자 정보를 찾을 수 없습니다.");
         }
+        return userRepository.findByUsername(username).orElseThrow(() -> new RuntimeException("저장된 사용자를 찾을 수 없습니다."));
     }
 
     private String escapeSql(String value) {
