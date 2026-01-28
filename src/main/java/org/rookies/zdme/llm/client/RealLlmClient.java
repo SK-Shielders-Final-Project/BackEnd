@@ -11,6 +11,7 @@ import org.springframework.web.client.RestClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,11 +44,12 @@ public class RealLlmClient implements LlmClient {
             String jsonBody = objectMapper.writeValueAsString(payload);
             System.out.println("🚀 전송할 JSON: " + jsonBody);
 
+            byte[] bodyBytes = jsonBody.getBytes(StandardCharsets.UTF_8);
             // ⚠️ 아래는 예시 스펙: POST /generate -> { "text": "...", "model": "..." }
             Map<String, Object> res = restClient.post()
                 .uri("/api/generate")
                 .contentType(MediaType.APPLICATION_JSON)
-                .body(jsonBody)
+                .body(bodyBytes)
                 .retrieve()
                 .body(Map.class);
 
@@ -62,9 +64,9 @@ public class RealLlmClient implements LlmClient {
             throw new RuntimeException("JSON 변환 실패", e);
         } catch (Exception e) {
             // 에러 발생 시 로그를 남기고 예외를 다시 던짐
-            System.err.println("❌ LLM 통신 중 에러 발생: " + e.getMessage());
+            System.err.println("❌ 에러 발생: " + e.getMessage());
             e.printStackTrace();
-            throw new RuntimeException("LLM 서버 통신 오류", e);
+            throw new RuntimeException("LLM 호출 오류", e);
         }
 
     }
