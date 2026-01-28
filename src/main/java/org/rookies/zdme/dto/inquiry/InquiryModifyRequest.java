@@ -6,6 +6,7 @@ import lombok.Setter;
 @Getter
 @Setter
 public class InquiryModifyRequest {
+    private Long user_id;
     private Long inquiry_id;
     private String title;
     private String content;

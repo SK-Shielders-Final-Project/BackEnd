@@ -33,13 +33,19 @@ public class InquiryService {
 
     @Transactional
     public InquiryResponse write(InquiryWriteRequest req) {
+        if (req.getUser_id() == null) {
+            throw new IllegalArgumentException("user_id is required");
+        }
+        User user = userRepository.findById(req.getUser_id())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
         File file = null;
         if (req.getFile_id() != null) {
             file = fileService.getMeta(req.getFile_id());
         }
 
         Inquiry inquiry = Inquiry.builder()
-                .user(null) // userId 검증 제거로 인해 user 연결 없음
+                .user(user)
                 .title(req.getTitle())
                 .content(req.getContent())
                 .imageUrl("")
@@ -52,8 +58,11 @@ public class InquiryService {
     }
 
     @Transactional(readOnly = true)
-    public List<InquiryResponse> listAllInquiries() { // Changed from listByUser
-        List<Inquiry> list = inquiryRepository.findAllByOrderByCreatedAtDesc(); // Fetch all
+    public List<InquiryResponse> listInquiriesByUser(Long userId) {
+        if (userId == null) {
+            throw new IllegalArgumentException("user_id is required");
+        }
+        List<Inquiry> list = inquiryRepository.findAllByUser_UserIdOrderByCreatedAtDesc(userId);
         return list.stream()
                 .map(inq -> toResponse(inq, 0)) // Default adminLevel
                 .collect(Collectors.toList());
@@ -79,11 +88,16 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryModifyResponse modify(InquiryModifyRequest req) { // userId parameter and ownership validation removed
+    public InquiryModifyResponse modify(InquiryModifyRequest req) {
         if (req == null) throw new IllegalArgumentException("request is required");
+        if (req.getUser_id() == null) throw new IllegalArgumentException("user_id is required");
         if (req.getInquiry_id() == null) throw new IllegalArgumentException("inquiry_id is required");
         if (req.getTitle() == null || req.getTitle().isBlank()) throw new IllegalArgumentException("title is required");
         if (req.getContent() == null) req.setContent("");
+
+        if (!inquiryRepository.existsByInquiryIdAndUser_UserId(req.getInquiry_id(), req.getUser_id())) {
+            throw new ForbiddenException("You are not the owner of this inquiry.");
+        }
 
         Inquiry inquiry = inquiryRepository.findById(req.getInquiry_id())
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));
@@ -124,8 +138,13 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryDeleteResponse deleteByUser(Long inquiryId) { // userId parameter and ownership validation removed
+    public InquiryDeleteResponse deleteByUser(Long userId, Long inquiryId) {
+        if (userId == null) throw new IllegalArgumentException("user_id is required");
         if (inquiryId == null) throw new IllegalArgumentException("inquiry_id is required");
+
+        if (!inquiryRepository.existsByInquiryIdAndUser_UserId(inquiryId, userId)) {
+            throw new ForbiddenException("You are not the owner of this inquiry.");
+        }
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));
