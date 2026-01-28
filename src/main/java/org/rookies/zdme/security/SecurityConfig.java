@@ -46,19 +46,34 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http.csrf(csrf -> csrf.disable())
+        http
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // 로그인 API 경로 등은 인증 없이 누구나 접근 가능하게 설정 (Permit All)
-                        .requestMatchers("/api/user/auth/login", "/api/user/auth/signup", "/api/admin/auth/login", "/.well-known/jwks.json", "/api/auth/password-reset/**", "/error").permitAll()
+                        // ✅ Swagger / OpenAPI 문서 경로 허용 (추가)
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html"
+                        ).permitAll()
+
+                        // 기존 permitAll 유지
+                        .requestMatchers(
+                                "/api/user/auth/login",
+                                "/api/user/auth/signup",
+                                "/api/admin/auth/login",
+                                "/.well-known/jwks.json",
+                                "/api/auth/password-reset/**",
+                                "/error"
+                        ).permitAll()
                         .requestMatchers(SecurityConstants.PUBLIC_URLS).permitAll()
-                        // 그 외 모든 요청은 반드시 인증을 거쳐야 함
+
+                        // 그 외 모든 요청은 반드시 인증
                         .anyRequest().authenticated()
                 )
                 // 세션을 서버에 저장하지 않도록 STATELESS로 설정 (JWT 필수 설정)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
         // JWT 필터 위치 설정
-        // UsernamePasswordAuthenticationFilter(기본 로그인 필터) 실행 전에 jwtRequestFilter를 먼저 실행하여 토큰이 유효하면 미리 인증 처리
         http.addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
