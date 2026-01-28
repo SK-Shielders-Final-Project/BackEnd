@@ -17,14 +17,28 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
 @RestController
-@RequestMapping("/api/user/files")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class FileDownloadController {
 
     private final FileService fileService;
 
-    @GetMapping("/download")
+    @GetMapping("/user/files/download")
     public ResponseEntity<Resource> downloadFile(@RequestParam("file") String file, HttpServletRequest request) {
+        return download(file, request);
+    }
+
+    @GetMapping("/admin/files/download")
+    public ResponseEntity<Resource> downloadFileForAdmin(
+            @RequestParam("file") String file,
+            @RequestParam(required = false) Integer admin_level,
+            HttpServletRequest request
+    ) {
+        // TODO: admin_level에 따른 권한 검증 로직 추가 가능
+        return download(file, request);
+    }
+
+    private ResponseEntity<Resource> download(String file, HttpServletRequest request) {
         // file 매개변수는 '카테고리/날짜/파일명.확장자' 형태의 전체 경로를 기대합니다.
         Resource resource = fileService.loadAsResource(file);
 
@@ -38,7 +52,7 @@ public class FileDownloadController {
         if (contentType == null) {
             contentType = "application/octet-stream";
         }
-        
+
         String originalFilename = file.substring(file.lastIndexOf("/") + 1);
         String encodedFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8).replace("+", "%20");
 
