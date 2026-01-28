@@ -26,7 +26,7 @@ public class RealLlmClient implements LlmClient {
     public LlmResponse generate(LlmRequest request) {
         // ⚠️ 아래는 예시 스펙: POST /generate -> { "text": "...", "model": "..." }
         Map<String, Object> res = restClient.post()
-                .uri("/generate")
+                .uri("/api/generate")
                 .body(request)
                 .retrieve()
                 .body(Map.class);
