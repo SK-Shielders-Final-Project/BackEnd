@@ -42,6 +42,8 @@ public class UserAPIController {
         try {
             User newUser = userService.vulnerableSignup(requestData);
             return ResponseEntity.ok(SignupResponse.fromEntity(newUser));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.singletonMap("error", e.getMessage()));
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Collections.singletonMap("error", e.getMessage()));
         } catch (Exception e) {
@@ -138,8 +140,12 @@ public class UserAPIController {
         try {
             User updatedUser = userService.updateUserInfo(principal.getName(), request);
             return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
+        } catch (UsernameNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
         } catch (BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "비밀번호가 일치하지 않습니다."));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Collections.singletonMap("error", e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "회원 정보 수정 중 오류가 발생했습니다."));
         }

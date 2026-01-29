@@ -23,6 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 @Service
 @RequiredArgsConstructor
@@ -35,6 +36,37 @@ public class UserService implements UserDetailsService {
     @PersistenceContext
     private EntityManager entityManager;
 
+    private void validateUsername(String username) {
+        if (username == null || !Pattern.matches("^[a-zA-Z0-9]{5,20}$", username)) {
+            throw new IllegalArgumentException("아이디는 5자에서 20자 사이의 영문, 숫자만 가능합니다.");
+        }
+    }
+
+    private void validatePassword(String password) {
+        if (password == null || password.length() < 8) {
+            throw new IllegalArgumentException("비밀번호는 8자 이상이어야 합니다.");
+        }
+        int categoryCount = 0;
+        if (Pattern.compile("[a-zA-Z]").matcher(password).find()) categoryCount++;
+        if (Pattern.compile("[0-9]").matcher(password).find()) categoryCount++;
+        if (Pattern.compile("[^a-zA-Z0-9]").matcher(password).find()) categoryCount++;
+        if (categoryCount < 2) { // 영어, 숫자, 특수문자 중 2종류 이상
+            throw new IllegalArgumentException("비밀번호는 영문, 숫자, 특수문자 중 2종류를 조합하여 8자 이상이어야 합니다.");
+        }
+    }
+
+    private void validateEmail(String email) {
+        if (email == null || !Pattern.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,6}$", email)) {
+            throw new IllegalArgumentException("유효하지 않은 이메일 형식입니다.");
+        }
+    }
+
+    private void validatePhone(String phone) {
+        if (phone == null || !Pattern.matches("^010[0-9]{8}$", phone)) {
+            throw new IllegalArgumentException("유효하지 않은 전화번호 형식입니다. (01000000000 형식)");
+        }
+    }
+
     // 1. SQL Injection (사용자명 중복 체크 및 사용자 저장)
     // 2. 대량 할당(Mass Assignment)
     // 3. SQL Injection (사용자 저장)
@@ -42,9 +74,7 @@ public class UserService implements UserDetailsService {
     public User vulnerableSignup(Map<String, Object> requestData) {
         // 1. SQL Injection (사용자명 중복 체크)
         String username = (String) requestData.get("username");
-        if (username == null || username.trim().isEmpty()) {
-            throw new IllegalArgumentException("사용자 이름은 필수입니다.");
-        }
+        validateUsername(username);
 
         String checkUsernameSql = "SELECT user_id FROM users WHERE username = '" + username + "'";
 
@@ -54,7 +84,9 @@ public class UserService implements UserDetailsService {
         }
 
         String email = (String) requestData.get("email");
-        if (email != null && !email.trim().isEmpty()) {
+        validateEmail(email);
+
+        if (!email.trim().isEmpty()) {
             String checkEmailSql = "SELECT user_id FROM users WHERE email = '" + email + "'";
 
             List<Object[]> existingEmails = entityManager.createNativeQuery(checkEmailSql).getResultList();
@@ -64,7 +96,9 @@ public class UserService implements UserDetailsService {
         }
 
         String phone = (String) requestData.get("phone");
-        if (phone != null && !phone.trim().isEmpty()) {
+        validatePhone(phone);
+
+        if (!phone.trim().isEmpty()) {
             String checkPhoneSql = "SELECT user_id FROM users WHERE phone = '" + phone + "'";
 
             List<Object[]> existingPhones = entityManager.createNativeQuery(checkPhoneSql).getResultList();
@@ -85,9 +119,7 @@ public class UserService implements UserDetailsService {
                 .build();
         
         String rawPassword = (String) requestData.get("password");
-        if (rawPassword == null || rawPassword.trim().isEmpty()) {
-            throw new IllegalArgumentException("비밀번호는 필수입니다.");
-        }
+        validatePassword(rawPassword);
 
         String encodedPassword = passwordEncoder.encode(rawPassword);
 
@@ -136,6 +168,12 @@ public class UserService implements UserDetailsService {
         userRepository.findByUsername(request.getUsername()).ifPresent(user -> {
             throw new IllegalStateException("이미 존재하는 아이디입니다.");
         });
+        userRepository.findByEmail(request.getEmail()).ifPresent(user -> {
+            throw new IllegalStateException("이미 존재하는 이메일입니다.");
+        });
+        userRepository.findByPhone(request.getPhone()).ifPresent(user -> {
+            throw new IllegalStateException("이미 존재하는 휴대폰 번호입니다.");
+        });
 
         User newUser = User.builder()
                 .username(request.getUsername())
@@ -183,6 +221,8 @@ public class UserService implements UserDetailsService {
             // Invalid Base64 token
             return false;
         }
+
+        validatePassword(newPassword);
 
         Optional<User> userOptional = userRepository.findByEmail(email);
         if (userOptional.isPresent()) {
@@ -286,6 +326,7 @@ public class UserService implements UserDetailsService {
             throw new BadCredentialsException("Invalid current password");
         }
 
+        validatePassword(newPassword);
         user.changePassword(passwordEncoder.encode(newPassword));
         
         return userRepository.save(user);
@@ -298,6 +339,20 @@ public class UserService implements UserDetailsService {
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new BadCredentialsException("Invalid password");
+        }
+
+        if (request.getEmail() != null && !request.getEmail().equals(user.getEmail())) {
+            validateEmail(request.getEmail());
+            userRepository.findByEmail(request.getEmail()).ifPresent(existingUser -> {
+                throw new IllegalStateException("이미 사용중인 이메일입니다.");
+            });
+        }
+
+        if (request.getPhone() != null && !request.getPhone().equals(user.getPhone())) {
+            validatePhone(request.getPhone());
+            userRepository.findByPhone(request.getPhone()).ifPresent(existingUser -> {
+                throw new IllegalStateException("이미 사용중인 핸드폰번호입니다.");
+            });
         }
 
         user.updateInfo(request.getName(), request.getEmail(), request.getPhone(), request.getAdmin_lev());
