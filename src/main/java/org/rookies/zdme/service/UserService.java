@@ -74,7 +74,7 @@ public class UserService implements UserDetailsService {
     public User vulnerableSignup(Map<String, Object> requestData) {
         // 1. SQL Injection (사용자명 중복 체크)
         String username = (String) requestData.get("username");
-        validateUsername(username);
+//        validateUsername(username);
 
         String checkUsernameSql = "SELECT user_id FROM users WHERE username = '" + username + "'";
 
