@@ -64,7 +64,9 @@ public class User implements UserDetails {
         this.name = name;
         this.email = email;
         this.phone = phone;
-        this.adminLevel = adminLevel; // Vulnerability introduced as per user request
+        if (adminLevel != null) {
+            this.adminLevel = adminLevel;
+        }
         this.updatedAt = LocalDateTime.now();
     }
 
