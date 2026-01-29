@@ -23,7 +23,7 @@ public class JwkSetController {
      * 공개키
      * @return
      */
-    @GetMapping("/.well-known/jwks.json")
+    @GetMapping("/api/.well-known/jwks.json")
     public ResponseEntity<Map<String, Object>> getJwkSet() {
         Map<String, Object> jwk = jwtUtil.getJwk();
         Map<String, Object> jwkSet = Collections.singletonMap("keys", Collections.singletonList(jwk));
