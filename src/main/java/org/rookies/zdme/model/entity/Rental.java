@@ -1,8 +1,7 @@
 package org.rookies.zdme.model.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.rookies.zdme.model.entity.User;
 
 import java.time.LocalDateTime;
@@ -11,6 +10,8 @@ import java.time.LocalDateTime;
 @Table(name = "rentals")
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Rental {
 
     @Id

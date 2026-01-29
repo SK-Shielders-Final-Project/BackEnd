@@ -2,6 +2,7 @@ package org.rookies.zdme.controller;
 
 import org.rookies.zdme.dto.admin.StaffAdminLevelUpdateRequest;
 import org.rookies.zdme.dto.admin.StaffAdminLevelUpdateResponse;
+import org.rookies.zdme.dto.admin.StaffListResponse;
 import org.rookies.zdme.service.AdminStaffService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,15 +20,16 @@ public class AdminStaffController {
         this.adminStaffService = adminStaffService;
     }
 
-    @PutMapping({"/staff", "/staff/"})
+    @PutMapping({"/staff"})
     public ResponseEntity<StaffAdminLevelUpdateResponse> updateStaffPermission(
             @RequestBody StaffAdminLevelUpdateRequest request // response body 받는 부분
     ) {
         return ResponseEntity.ok(adminStaffService.updateAdminLevel(request));
     }
-    @GetMapping({"/staff", "/staff/"})
-    public ResponseEntity<List<Map<String, Object>>> getStaffList() {
+    @GetMapping({"/staff"})
+    public ResponseEntity<List<StaffListResponse>> getStaffList() {
         return ResponseEntity.ok(adminStaffService.getStaffList());
     }
+
 
 }
