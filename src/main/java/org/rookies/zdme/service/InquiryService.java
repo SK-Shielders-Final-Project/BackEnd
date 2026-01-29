@@ -25,6 +25,7 @@ public class InquiryService {
             InquiryRepository inquiryRepository,
             UserRepository userRepository,
             FileService fileService
+
     ) {
         this.inquiryRepository = inquiryRepository;
         this.userRepository = userRepository;
@@ -85,6 +86,13 @@ public class InquiryService {
         return toResponse(inquiry, adminLevel); // Assuming adminLevel is 0 for a standard response.
     }
 
+    @Transactional(readOnly = true)
+    public InquiryDetailResponseDto getInquiryDetails(Long inquiryId) {
+        Inquiry inquiry = inquiryRepository.findById(inquiryId)
+                .orElseThrow(() -> new NotFoundException("Inquiry not found with id: " + inquiryId));
+        return InquiryDetailResponseDto.from(inquiry);
+    }
+
     @Transactional
     public InquiryResponse reply(Long inquiryId, String adminReply, Integer adminLevel) { // adminId parameter removed
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
@@ -131,6 +139,7 @@ public class InquiryService {
 
     private InquiryResponse toResponse(Inquiry inq, Integer adminLevForResponse) {
         Long fileId = (inq.getFile() == null) ? null : inq.getFile().getFileId();
+        String originalFilename = (inq.getFile() == null) ? null : inq.getFile().getOriginalName();
 
         return InquiryResponse.builder()
                 .inquiry_id(inq.getInquiryId())
@@ -138,6 +147,7 @@ public class InquiryService {
                 .title(inq.getTitle())
                 .content(inq.getContent())
                 .file_id(fileId)
+                .original_filename(originalFilename)
                 .admin_level(adminLevForResponse == null ? 0 : adminLevForResponse)
                 .admin_reply(inq.getAdminReply())
                 .created_at(inq.getCreatedAt())

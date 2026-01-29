@@ -41,6 +41,12 @@ public class InquiryController {
         return ResponseEntity.ok(inquiryService.listInquiriesByUser(request.getUser_id()));
     }
 
+    // 사용자 측 문의사항 상세 조회
+    @GetMapping("/user/inquiry/{inquiryId}")
+    public ResponseEntity<InquiryDetailResponseDto> getInquiryDetails(@PathVariable Long inquiryId) {
+        return ResponseEntity.ok(inquiryService.getInquiryDetails(inquiryId));
+    }
+
     // 관리자 측 문의사항 전체 조회
     @PostMapping("/admin/inquiry")
     public ResponseEntity<List<InquiryResponse>> listForAdmin(
@@ -49,14 +55,10 @@ public class InquiryController {
         return ResponseEntity.ok(inquiryService.listAllForAdmin(request.getAdmin_level()));
     }
 
-    // 관리자 측 문의사항 개별 조회
-    @PostMapping("/admin/inquiry/{inquiry_id}")
-    public ResponseEntity<InquiryResponse> getInquiryForAdmin(
-            @PathVariable Long inquiry_id,
-            @RequestBody AdminInquiryDetailRequest request
-    ) {
-        InquiryResponse res = inquiryService.getInquiryById(inquiry_id, request.getAdmin_level());
-        return ResponseEntity.ok(res);
+    // 관리자 측 문의사항 상세 조회
+    @GetMapping("/admin/inquiry/{inquiryId}")
+    public ResponseEntity<InquiryDetailResponseDto> getInquiryDetailsForAdmin(@PathVariable Long inquiryId) {
+        return ResponseEntity.ok(inquiryService.getInquiryDetails(inquiryId));
     }
 
     // 관리자 답변 작성
