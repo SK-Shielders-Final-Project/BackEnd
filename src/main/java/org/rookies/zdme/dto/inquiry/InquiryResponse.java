@@ -12,7 +12,6 @@ public class InquiryResponse {
     private Long user_id;
     private String title;
     private String content;
-    private String image_url;
     private Long file_id;
     private Integer admin_level;
     private String admin_reply;

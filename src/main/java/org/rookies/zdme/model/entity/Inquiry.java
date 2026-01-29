@@ -29,9 +29,6 @@ public class Inquiry {
     @Column(name = "content")
     private String content;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "file_id")
     private File file;

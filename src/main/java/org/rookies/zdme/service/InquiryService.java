@@ -48,7 +48,6 @@ public class InquiryService {
                 .user(user)
                 .title(req.getTitle())
                 .content(req.getContent())
-                .imageUrl("")
                 .file(file)
                 .adminReply(null)
                 .build();
@@ -138,7 +137,6 @@ public class InquiryService {
                 .user_id(inq.getUser() == null ? null : inq.getUser().getUserId())
                 .title(inq.getTitle())
                 .content(inq.getContent())
-                .image_url(inq.getImageUrl() == null ? "" : inq.getImageUrl())
                 .file_id(fileId)
                 .admin_level(adminLevForResponse == null ? 0 : adminLevForResponse)
                 .admin_reply(inq.getAdminReply())

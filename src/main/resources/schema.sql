@@ -40,7 +40,6 @@ CREATE TABLE inquiries (
                            user_id     NUMBER NOT NULL,
                            title       VARCHAR2(200) NOT NULL,
                            content     CLOB,
-                           image_url   VARCHAR2(500),
                            file_id     NUMBER,
                            admin_reply CLOB,
                            created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

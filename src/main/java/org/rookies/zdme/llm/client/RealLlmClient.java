@@ -15,7 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
-@Profile("prod")
+@Profile("dev")
 @Component
 public class RealLlmClient implements LlmClient {
 
