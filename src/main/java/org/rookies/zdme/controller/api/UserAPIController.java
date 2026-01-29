@@ -59,7 +59,6 @@ public class UserAPIController {
     public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) {
         try {
             authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
-            userService.checkUserRole(authenticationRequest.getUsername());
             final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
             final String accessToken = jwtUtil.generateToken(userDetails);
             final String refreshToken = jwtUtil.generateRefreshToken(userDetails);
