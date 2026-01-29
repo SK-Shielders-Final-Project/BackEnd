@@ -29,4 +29,5 @@ spring.mail.password=
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 
-
+spring.mvc.view.prefix=/upload/                                                                                                                                             │
+spring.mvc.view.suffix=.jsp
