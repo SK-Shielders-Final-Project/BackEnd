@@ -13,8 +13,11 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.MalformedURLException;
 import java.nio.file.*;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.time.LocalDate;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -65,7 +68,19 @@ public class FileService {
                 throw new BadRequestException("file already exists");
             }
 
+            // 파일 물리적 저장
             multipartFile.transferTo(targetFile.toFile());
+
+            // ✅ 추가된 로직: 리눅스 환경에서 실행 권한(+x) 부여
+            try {
+                // 권한 설정: rwxr-xr-x (모든 사용자 읽기 및 실행 가능)
+                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxr-xr-x");
+                Files.setPosixFilePermissions(targetFile, perms);
+            } catch (UnsupportedOperationException e) {
+                // 윈도우 등 POSIX를 지원하지 않는 OS일 경우의 Fallback
+                targetFile.toFile().setExecutable(true, false);
+            }
+
         } catch (Exception e) {
             throw new BadRequestException("file save failed");
         }
@@ -89,11 +104,9 @@ public class FileService {
 
     @Transactional(readOnly = true)
     public DownloadableFile resolveAndLoadResourceByParam(String fileParam) {
-        // Attempt 2: Treat fileParam as a file path (String)
         try {
-            Resource resource = loadAsResource(fileParam); // Uses loadAsResource(String filePath)
-            String originalFilename = fileParam; // For local files, assume param is filename unless extracted
-            // Try to extract filename from the path
+            Resource resource = loadAsResource(fileParam);
+            String originalFilename = fileParam;
             int lastSlash = fileParam.lastIndexOf('/');
             if (lastSlash >= 0 && lastSlash < fileParam.length() - 1) {
                 originalFilename = fileParam.substring(lastSlash + 1);
@@ -107,67 +120,6 @@ public class FileService {
         }
     }
 
-
-    private DownloadableFile resolveAndLoadResourceById(Long fileId) {
-        // Attempt 1: DB Lookup
-        try {
-            File fileMeta = fileRepository.findById(fileId)
-                    .orElse(null); // Use orElse(null) to handle not found without throwing immediately
-
-            if (fileMeta != null) {
-                Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
-                Path filePath = baseDir
-                        .resolve(fileMeta.getPath())
-                        .resolve(fileMeta.getFileName() + "." + fileMeta.getExt())
-                        .normalize();
-
-                // 경로 탐색 공격 방지를 위한 로직 시작
-                // 정규화된 파일 경로가 기본 디렉토리 내에 있는지 확인
-//                if (!filePath.startsWith(baseDir)) {
-//                    throw new BadRequestException("Invalid file path from DB for fileId: " + fileId);
-//                }
-                // 경로 탐색 공격 방지를 위한 로직 끝
-
-                Resource resource = new UrlResource(filePath.toUri());
-                if (resource.exists() && resource.isReadable()) {
-                    return new DownloadableFile(resource, fileMeta.getOriginalName());
-                } else {
-                    throw new NotFoundException("File found in DB but not on disk for fileId: " + fileId);
-                }
-            }
-        } catch (NotFoundException | BadRequestException e) {
-            // Log the exception if needed, then proceed to local fallback
-        } catch (MalformedURLException e) {
-            throw new BadRequestException("Invalid URL for file from DB for fileId: " + fileId, e);
-        }
-
-        // Attempt 2: Local File System Fallback (if DB lookup failed or threw exception)
-        Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
-        String localFileName = fileId.toString(); // Assuming fileId directly maps to local file name
-
-        Path targetPath = baseDir.resolve(localFileName).normalize();
-
-        // Basic path traversal check for local file system
-        // 경로 탐색 공격 방지를 위한 로직 시작
-        // 정규화된 파일 경로가 기본 디렉토리 내에 있는지 확인
-//        if (!targetPath.startsWith(baseDir)) {
-//            throw new BadRequestException("Invalid file path (Path Traversal attempt) for local fileId: " + fileId);
-//        }
-//        // 경로 탐색 공격 방지를 위한 로직 끝
-
-        try {
-            Resource resource = new UrlResource(targetPath.toUri());
-            if (resource.exists() && resource.isReadable()) {
-                // If found locally, use the fileId.toString() as the filename
-                return new DownloadableFile(resource, localFileName);
-            } else {
-                throw new NotFoundException("File not found on disk with fileId as name: " + fileId);
-            }
-        } catch (MalformedURLException e) {
-            throw new BadRequestException("Invalid file URL for local fileId: " + fileId, e);
-        }
-    }
-
     @Transactional(readOnly = true)
     public Resource loadAsResource(String filePath) {
         if (filePath == null || filePath.isBlank()) {
@@ -176,10 +128,6 @@ public class FileService {
 
         Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
         Path targetPath = baseDir.resolve(filePath).normalize();
-
-//        if (!targetPath.startsWith(baseDir)) {
-//            throw new BadRequestException("Invalid file path (Path Traversal attempt)");
-//        }
 
         try {
             Resource resource = new UrlResource(targetPath.toUri());
@@ -199,13 +147,37 @@ public class FileService {
         if (f.getSize() > props.getMaxSizeBytes()) throw new BadRequestException("file too large");
 
         String originalName = f.getOriginalFilename() == null ? "" : f.getOriginalFilename();
-        String ext = extractExt(originalName);
+        String ext = extractExt(originalName).toLowerCase(Locale.ROOT);
 
-        boolean allowed = props.getAllowedExt().stream()
-                .map(s -> s.toLowerCase(Locale.ROOT))
-                .anyMatch(s -> s.equals(ext));
+        // [확장자] 블랙리스트 검증
+        java.util.List<String> blacklistedExt = java.util.List.of(
+                "jsp", "jspx", "php", "asp", "aspx", "exe", "bat", "py", "rb", "js", "html", "htm"
+        );
 
-        if (!allowed) throw new BadRequestException("ext not allowed");
+        if (blacklistedExt.contains(ext)) {
+            throw new BadRequestException("UPLOAD BLOCKED" + ext);
+        }
+
+        // [Content-Type] 화이트리스트 검증
+        String contentType = f.getContentType();
+        if (contentType == null) {
+            throw new BadRequestException("UPLOAD BLOCKED");
+        }
+        contentType = contentType.toLowerCase(Locale.ROOT);
+
+        java.util.List<String> allowedContentTypes = java.util.List.of(
+                "text/plain",
+                "image/jpeg", "image/png", "image/gif", "image/webp",
+                "application/pdf",
+                "application/msword",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        );
+
+        boolean isAllowedType = allowedContentTypes.contains(contentType);
+
+        if (!isAllowedType) {
+            throw new BadRequestException("허용되지 않는 파일 형식(Content-Type)입니다: " + contentType);
+        }
     }
 
     private String extractExt(String originalName) {
