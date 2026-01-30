@@ -137,21 +137,21 @@ public class InquiryService {
                 .build();
     }
 
+    // InquiryService.java 수정안
     private InquiryResponse toResponse(Inquiry inq, Integer adminLevForResponse) {
-        Long fileId = (inq.getFile() == null) ? null : inq.getFile().getFileId();
-
         return InquiryResponse.builder()
                 .inquiry_id(inq.getInquiryId())
-                .user_id(inq.getUser() == null ? null : inq.getUser().getUserId())
+                // 작성자(User)가 null인 경우를 대비해 안전하게 처리
+                .user_id(inq.getUser() != null ? inq.getUser().getUserId() : null)
                 .title(inq.getTitle())
-                .file_id(fileId)
-                .admin_level(adminLevForResponse == null ? 0 : adminLevForResponse)
+                // 파일(File)이 null인 경우를 대비해 안전하게 처리
+                .file_id(inq.getFile() != null ? inq.getFile().getFileId() : null)
+                .admin_level(adminLevForResponse != null ? adminLevForResponse : 0)
                 .admin_reply(inq.getAdminReply())
                 .created_at(inq.getCreatedAt())
                 .updated_at(inq.getUpdatedAt())
                 .build();
     }
-
     @Transactional
     public InquiryDeleteResponse deleteByUser(Long userId, Long inquiryId) {
         if (userId == null) throw new IllegalArgumentException("user_id is required");
@@ -186,5 +186,5 @@ public class InquiryService {
                 .result("Y")
                 .build();
     }
-
 }
+
