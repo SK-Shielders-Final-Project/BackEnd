@@ -49,6 +49,9 @@ public class User implements UserDetails {
     @Column
     private Integer adminLevel;
 
+    @Column(name = "card_number", length = 50)
+    private String cardNumber;
+
     @Column
     private LocalDateTime createdAt;
 

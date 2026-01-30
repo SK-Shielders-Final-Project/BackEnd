@@ -42,6 +42,12 @@ public class AdminStaffService {
                         .user_id(u.getUserId())
                         .email(u.getEmail())
                         .admin_level(u.getAdminLevel())
+                        // ✅ 아래 필드들을 추가해야 프론트에 null이 안 뜹니다.
+                        .user_name(u.getUsername()) // Entity의 username을 DTO의 user_name에 매핑
+                        .name(u.getName())         // Entity의 name을 DTO의 name에 매핑
+                        .phone(u.getPhone())
+                        // 만약 Entity에 card_number가 없다면 null이 유지됩니다.
+                        // (Entity에 필드 추가가 필요함 - 아래 2번 참고)
                         .build())
                 .collect(Collectors.toList());
     }
