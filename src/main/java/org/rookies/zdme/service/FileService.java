@@ -89,18 +89,6 @@ public class FileService {
 
     @Transactional(readOnly = true)
     public DownloadableFile resolveAndLoadResourceByParam(String fileParam) {
-        // Attempt 1: Try parsing fileParam as a Long (fileId)
-        try {
-            Long fileId = Long.parseLong(fileParam);
-            // If successfully parsed as Long, try to resolve by ID
-            return resolveAndLoadResourceById(fileId);
-        } catch (NumberFormatException e) {
-            // Not a valid Long, proceed to treat as file path
-        } catch (NotFoundException e) {
-            // File not found by ID, proceed to treat as file path
-            // (e.g., if a valid Long was passed but no such fileId in DB/local system by ID)
-        }
-
         // Attempt 2: Treat fileParam as a file path (String)
         try {
             Resource resource = loadAsResource(fileParam); // Uses loadAsResource(String filePath)
@@ -113,7 +101,7 @@ public class FileService {
 
             return new DownloadableFile(resource, originalFilename);
         } catch (NotFoundException e) {
-            throw new NotFoundException("File not found by ID or by path: " + fileParam, e);
+            throw new NotFoundException("File not found by path: " + fileParam, e);
         } catch (BadRequestException e) {
             throw new BadRequestException("Invalid file path: " + fileParam, e);
         }

@@ -34,11 +34,11 @@ public class InquiryController {
     }
 
     // 사용자 측 문의사항 조회
-    @PostMapping("/user/inquiry")
+    @GetMapping("/user/inquiry")
     public ResponseEntity<List<InquiryResponse>> listByUser(
-            @RequestBody InquiryListRequest request
+            @RequestParam("user_id") Long userId
     ) {
-        return ResponseEntity.ok(inquiryService.listInquiriesByUser(request.getUser_id()));
+        return ResponseEntity.ok(inquiryService.listInquiriesByUser(userId));
     }
 
     // 사용자 측 문의사항 상세 조회
@@ -56,9 +56,9 @@ public class InquiryController {
     }
 
     // 관리자 측 문의사항 상세 조회
-    @GetMapping("/admin/inquiry/{inquiryId}")
-    public ResponseEntity<InquiryDetailResponseDto> getInquiryDetailsForAdmin(@PathVariable Long inquiryId) {
-        return ResponseEntity.ok(inquiryService.getInquiryDetails(inquiryId));
+    @PostMapping("/admin/inquiry/detail")
+    public ResponseEntity<InquiryDetailResponseDto> getInquiryDetailsForAdmin(@RequestBody AdminInquiryDetailRequest request) {
+        return ResponseEntity.ok(inquiryService.getInquiryDetails(request.getInquiry_id()));
     }
 
     // 관리자 답변 작성

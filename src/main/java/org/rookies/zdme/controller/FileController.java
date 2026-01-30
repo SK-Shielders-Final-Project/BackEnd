@@ -31,12 +31,12 @@ public class FileController {
 
     // 파일 업로드 (사용자) - category 고정
     @PostMapping(value = "/files/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<java.util.Map<String, String>> upload(
+    public ResponseEntity<java.util.Map<String, Object>> upload(
             @RequestPart("file") MultipartFile file
     ) {
         try {
-            fileService.save(FIXED_CATEGORY, file);
-            return ResponseEntity.ok(java.util.Map.of("result", "Y"));
+            File saved = fileService.save(FIXED_CATEGORY, file);
+            return ResponseEntity.ok(java.util.Map.of("result", "Y", "file_id", saved.getFileId()));
         } catch (org.rookies.zdme.exception.BadRequestException e) {
             // Bad request exceptions from FileService (validation, etc.)
             return ResponseEntity.badRequest().body(java.util.Map.of("result", "N"));

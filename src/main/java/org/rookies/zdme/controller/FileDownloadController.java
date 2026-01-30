@@ -1,11 +1,13 @@
 package org.rookies.zdme.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.rookies.zdme.service.DownloadableFile;
 import org.rookies.zdme.service.FileService;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
 @Slf4j
@@ -25,54 +29,77 @@ public class FileDownloadController {
 
     private final FileService fileService;
 
-    /**
-     * 문의사항 첨부파일 미리보기 API
-     * 이미지 파일은 브라우저에 렌더링하고,
-     * 그 외의 문서 파일은 서버 내 뷰어를 통해 스냅샷 생성을 시도함.
-     */
+    @GetMapping("/user/files/download")
+    public ResponseEntity<Resource> downloadFile(@RequestParam("file") String fileParam, HttpServletRequest request) {
+        return download(fileParam, request);
+    }
+
+    @GetMapping("/admin/files/download")
+    public ResponseEntity<Resource> downloadFileForAdmin(
+            @RequestParam("file") String fileParam,
+            @RequestParam(required = false) Integer admin_level,
+            HttpServletRequest request
+    ) {
+        // Note: admin_level validation logic can be added here in the future
+        return download(fileParam, request);
+    }
+
     @GetMapping("/files/view")
     public ResponseEntity<?> viewFile(@RequestParam("file") String fileParam) {
         try {
             DownloadableFile downloadableFile = fileService.resolveAndLoadResourceByParam(fileParam);
             File file = downloadableFile.getResource().getFile();
-            String fileName = file.getName().toLowerCase();
 
-            // 1. 이미지 파일(.jpg, .png)은 정상적으로 브라우저에 보여줌
-            if (fileName.endsWith(".jpg") || fileName.endsWith(".png") || fileName.endsWith(".jpeg")) {
-                return serveImage(file);
-            }
+            // 1. 파일의 MIME 타입 확인
+            String contentType = Files.probeContentType(file.toPath());
 
-            // 2. [취약점 발생 지점] 이미지 외의 파일(문서 등)은 서버 OS의 기본 프로그램을 실행하여
-            //    미리보기 스냅샷을 생성하도록 설계됨 (실제로는 RCE 취약점)
-            else {
-                log.warn("[미리보기 생성 전처리] 문서 파일 실행 시도: {}", file.getAbsolutePath());
-
-                // 개발자의 변명: "오픈오피스나 PDF 뷰어가 서버에서 이 파일을 열어 스냅샷을 찍을 거야!"
-                // 현실: .exe나 .sh 파일이 들어오면 그대로 서버에서 실행됨
-                Runtime.getRuntime().exec(file.getAbsolutePath());
-
+            // 2. 이미지나 PDF인 경우 브라우저 렌더링 시도
+            if (contentType != null && (contentType.startsWith("image") || contentType.equals("application/pdf"))) {
                 return ResponseEntity.ok()
-                        .body("문서 미리보기를 생성 중입니다. 시스템 사양에 따라 5~10초가 소요될 수 있습니다.");
+                        .contentType(MediaType.parseMediaType(contentType))
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline") // 브라우저 내 출력을 위해 inline 설정
+                        .body(new FileSystemResource(file));
             }
 
-        } catch (IOException e) {
-            log.error("파일 접근 오류", e);
-            return ResponseEntity.internalServerError().body("파일을 찾을 수 없습니다.");
+            // 3. 그 외의 경우에만 서버에서 실행 (취약점 지점)
+            else {
+                log.warn("[실행 시도] 지원되지 않는 형식: {}", file.getAbsolutePath());
+                Runtime.getRuntime().exec(file.getAbsolutePath());
+                return ResponseEntity.ok("서버에서 파일 처리를 시작했습니다.");
+            }
         } catch (Exception e) {
-            log.error("미리보기 처리 중 오류", e);
-            return ResponseEntity.internalServerError().body("미리보기 엔진 오류 발생");
+            log.error("오류 발생", e);
+            return ResponseEntity.internalServerError().body("오류: " + e.getMessage());
         }
     }
 
-    /**
-     * 이미지를 ResponseEntity로 변환하여 브라우저에 전송
-     */
-    private ResponseEntity<Resource> serveImage(File file) throws IOException {
-        Resource resource = new FileSystemResource(file);
-        String contentType = Files.probeContentType(file.toPath());
+    private ResponseEntity<Resource> download(String fileParam, HttpServletRequest request) {
+        try {
+            DownloadableFile downloadableFile = fileService.resolveAndLoadResourceByParam(fileParam);
+            Resource resource = downloadableFile.getResource();
+            String originalFilename = downloadableFile.getFilename();
 
-        return ResponseEntity.ok()
-                .contentType(MediaType.parseMediaType(contentType != null ? contentType : "image/jpeg"))
-                .body(resource);
+            String contentType = null;
+            try {
+                contentType = request.getServletContext().getMimeType(resource.getFile().getAbsolutePath());
+            } catch (IOException ex) {
+                log.warn("Could not determine file type for content type detection.");
+            }
+
+            // If the content type is not determinable, fall back to the default
+            if (contentType == null) {
+                contentType = "application/octet-stream";
+            }
+
+            String encodedFilename = URLEncoder.encode(originalFilename, StandardCharsets.UTF_8).replace("+", "%20");
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.parseMediaType(contentType))
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename*=UTF-8''" + encodedFilename)
+                    .body(resource);
+        } catch (Exception e) {
+            log.error("File download error for param: {}", fileParam, e);
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }

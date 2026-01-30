@@ -139,15 +139,12 @@ public class InquiryService {
 
     private InquiryResponse toResponse(Inquiry inq, Integer adminLevForResponse) {
         Long fileId = (inq.getFile() == null) ? null : inq.getFile().getFileId();
-        String originalFilename = (inq.getFile() == null) ? null : inq.getFile().getOriginalName();
 
         return InquiryResponse.builder()
                 .inquiry_id(inq.getInquiryId())
                 .user_id(inq.getUser() == null ? null : inq.getUser().getUserId())
                 .title(inq.getTitle())
-                .content(inq.getContent())
                 .file_id(fileId)
-                .original_filename(originalFilename)
                 .admin_level(adminLevForResponse == null ? 0 : adminLevForResponse)
                 .admin_reply(inq.getAdminReply())
                 .created_at(inq.getCreatedAt())

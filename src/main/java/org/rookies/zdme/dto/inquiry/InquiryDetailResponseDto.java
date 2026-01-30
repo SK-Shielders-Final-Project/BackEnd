@@ -2,7 +2,7 @@ package org.rookies.zdme.dto.inquiry;
 
 import lombok.Builder;
 import lombok.Getter;
-import org.rookies.zdme.dto.file.FileDetailResponseDto;
+import org.rookies.zdme.dto.file.FileResponseDto;
 import org.rookies.zdme.model.entity.Inquiry;
 import org.rookies.zdme.model.entity.User;
 
@@ -18,7 +18,7 @@ public class InquiryDetailResponseDto {
     private final LocalDateTime createdAt;
     private final String adminReply;
     private final LocalDateTime updatedAt;
-    private final FileDetailResponseDto attachment;
+    private final FileResponseDto attachment;
 
     public static InquiryDetailResponseDto from(Inquiry inquiry) {
         User user = inquiry.getUser();
@@ -32,7 +32,7 @@ public class InquiryDetailResponseDto {
                 .createdAt(inquiry.getCreatedAt())
                 .adminReply(inquiry.getAdminReply())
                 .updatedAt(inquiry.getUpdatedAt())
-                .attachment(FileDetailResponseDto.from(inquiry.getFile()))
+                .attachment(FileResponseDto.from(inquiry.getFile()))
                 .build();
     }
 }
