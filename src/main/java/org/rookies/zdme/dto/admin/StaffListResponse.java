@@ -12,5 +12,5 @@ public class StaffListResponse {
     private String user_name; // Long -> String으로 수정 추천
     private String name;      // Long -> String으로 수정 추천
     private String phone;     // Integer -> String으로 수정 추천 (010 때문)
-    private String card_number;
+
 }

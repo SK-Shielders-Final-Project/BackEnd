@@ -45,7 +45,7 @@ public class AdminStaffService {
                         .user_name(u.getUsername())
                         .name(u.getName())
                         .phone(u.getPhone())
-                        .card_number(u.getCardNumber())
+
                         .build())
                 .collect(Collectors.toList());
     }
