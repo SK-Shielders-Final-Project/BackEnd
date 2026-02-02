@@ -9,6 +9,7 @@ public class SecurityConstants {
             "/api/.well-known/jwks.json",
             "/api/auth/password-reset/**",
             "/api/auth/refresh",
+            "/api/map/bikes-nearby", // 자전거 위치 정보 API 허용
             "/error"
     };
 }
