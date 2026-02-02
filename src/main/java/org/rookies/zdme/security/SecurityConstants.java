@@ -9,6 +9,7 @@ public class SecurityConstants {
             "/api/.well-known/jwks.json",
             "/api/auth/password-reset/**",
             "/api/auth/refresh",
+            "/api/app/verify-integrity",
             "/error"
     };
 }
