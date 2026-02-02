@@ -120,9 +120,9 @@ public class User implements UserDetails {
 
     public void updatePoint(Long amount) {
         // 포인트가 -가 되는 것을 방지 (비즈니스 로직 취약점)
-//        if (amount + this.totalPoint < 0) {
-//            throw new IllegalStateException("회수할 포인트가 부족합니다.");
-//        }
+        if (amount + this.totalPoint < 0) {
+            throw new IllegalStateException("회수할 포인트가 부족합니다.");
+        }
         this.totalPoint += amount;
     }
 
