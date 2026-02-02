@@ -10,7 +10,6 @@ import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.BikeRepository;
 import org.rookies.zdme.repository.RentalRepository;
 import org.rookies.zdme.repository.UserRepository;
-import org.rookies.zdme.security.SecurityConfig;
 import org.rookies.zdme.security.SecurityUtil;
 import org.springframework.stereotype.Service;
 

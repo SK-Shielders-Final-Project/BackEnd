@@ -28,6 +28,7 @@ public class RentalController {
         }
 
     }
+
     @GetMapping("")
     public ResponseEntity<?> getRentals() {
         List<RentalsDto> rentals = rentalService.getRentals();
