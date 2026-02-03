@@ -162,7 +162,7 @@ public class UserAPIController {
                 Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
                 cipher.init(Cipher.DECRYPT_MODE, privateKey);
 
-                byte[] encryptedBytes = Base64.getDecoder().decode(request.getPassword());
+                byte[] encryptedBytes = Base64.getMimeDecoder().decode(request.getPassword());
                 byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
                 rawPassword = new String(decryptedBytes, StandardCharsets.UTF_8);
             } else {
@@ -180,6 +180,7 @@ public class UserAPIController {
         } catch (IllegalStateException e) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(Collections.singletonMap("error", e.getMessage()));
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "회원 정보 수정 중 오류가 발생했습니다."));
         }
     }
