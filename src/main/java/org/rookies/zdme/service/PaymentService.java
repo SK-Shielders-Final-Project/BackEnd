@@ -1,5 +1,7 @@
 package org.rookies.zdme.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.PaymentCancelDto;
@@ -27,6 +29,7 @@ public class PaymentService {
 
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Value("${toss.secret-key}")
     private String tossSecretKey;
@@ -62,26 +65,31 @@ public class PaymentService {
             );
 
             // 시큐어 코딩 버전 (토스에서 넘어온 response 값을 기준으로 payment 생성)
-//            JsonNode jsonNode = objectMapper.readTree(response.getBody());
-//            String approvedId = jsonNode.get("orderId").asText();
-//            String approvedKey = jsonNode.get("paymentKey").asText();
-//            Long approvedAmount = jsonNode.get("totalAmount").asLong();
+            JsonNode jsonNode = objectMapper.readTree(response.getBody());
+            String approvedId = jsonNode.get("orderId").asText();
+            String approvedKey = jsonNode.get("paymentKey").asText();
+            Long approvedAmount = jsonNode.get("totalAmount").asLong();
+            String actualMethod = jsonNode.get("method").asText();
+
+            if (!"카드".equalsIgnoreCase(actualMethod)) {
+                throw new RuntimeException("허용되지 않은 결제 수단입니다. (결제 시도된 수단: " + actualMethod + ")");
+            }
 
             String username = SecurityUtil.getCurrentUsername();
             User user = userRepository.findByUsername(username)
                     .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
 
-            // 사용자가 입력한 정보를 바탕으로 payment 객체 생성 (취약점 존재)
             Payment payment = Payment.builder()
                     .user(user)
-                    .orderId(dto.getOrderId())
-                    .amount(dto.getAmount())
-                    .paymentKey(dto.getPaymentKey())
+                    .orderId(approvedId)
+                    .amount(approvedAmount)
+                    .paymentKey(approvedKey)
                     .paymentStatus(Payment.PaymentStatus.DONE)
                     .paymentMethod("카드")
-                    .remainAmount(dto.getAmount())
+                    .remainAmount(approvedAmount)
                     .build();
-            user.updatePoint(dto.getAmount());
+
+            user.updatePoint(approvedAmount);
 
             // DB 내용 저장
             paymentRepository.save(payment);

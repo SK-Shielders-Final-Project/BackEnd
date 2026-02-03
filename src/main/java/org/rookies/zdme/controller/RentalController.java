@@ -5,6 +5,7 @@ import org.rookies.zdme.dto.RentalRequestDto;
 import org.rookies.zdme.dto.RentalResponseDto;
 import org.rookies.zdme.dto.RentalsDto;
 import org.rookies.zdme.service.RentalService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,9 +20,15 @@ public class RentalController {
 
     @PostMapping("")
     public ResponseEntity<?> startRental(@RequestBody RentalRequestDto reqDto) {
-        RentalResponseDto resDto = rentalService.startRental(reqDto);
-        return ResponseEntity.ok(resDto);
+        try {
+            RentalResponseDto resDto = rentalService.startRental(reqDto);
+            return ResponseEntity.ok(resDto);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+
     }
+
     @GetMapping("")
     public ResponseEntity<?> getRentals() {
         List<RentalsDto> rentals = rentalService.getRentals();

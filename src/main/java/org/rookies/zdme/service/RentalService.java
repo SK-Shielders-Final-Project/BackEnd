@@ -10,7 +10,6 @@ import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.repository.BikeRepository;
 import org.rookies.zdme.repository.RentalRepository;
 import org.rookies.zdme.repository.UserRepository;
-import org.rookies.zdme.security.SecurityConfig;
 import org.rookies.zdme.security.SecurityUtil;
 import org.springframework.stereotype.Service;
 
@@ -33,15 +32,15 @@ public class RentalService {
 
         String username = SecurityUtil.getCurrentUsername();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("사용자가 존재하지 않습니다."));
+                .orElseThrow(() -> new IllegalArgumentException("사용자가 존재하지 않습니다."));
 
         Bike bike = bikeRepository.findById(dto.getBikeId())
-                .orElseThrow(() -> new RuntimeException("존재하지 않는 자전거입니다."));
+                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 자전거입니다."));
 
         try {
             user.updatePoint(-1 * requiredPoint);
         } catch (IllegalStateException e) {
-            throw new RuntimeException("결제 실패 : " + e.getMessage());
+            throw new IllegalArgumentException("결제 실패 : " + e.getMessage());
         }
 
         LocalDateTime now = LocalDateTime.now();
