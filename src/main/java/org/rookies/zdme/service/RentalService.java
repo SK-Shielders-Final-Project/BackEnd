@@ -96,9 +96,14 @@ public class RentalService {
 
     @Transactional(readOnly = true)
     public List<RentalsDto> searchRentals(LocalDate start, LocalDate end, String bikeId) {
+        String username = SecurityUtil.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("존재하지 않는 사용자입니다."));
+
         StringBuilder sql = new StringBuilder();
         sql.append("SELECT * FROM rentals r ");
         sql.append("WHERE r.start_time BETWEEN :startDate AND :endDate ");
+        sql.append("AND r.user_id = :userId ");
 
         if (bikeId != null && !bikeId.isEmpty()) {
             sql.append("AND (TO_CHAR(r.bike_id) LIKE '%" + bikeId + "%') ");
@@ -112,6 +117,7 @@ public class RentalService {
         LocalDateTime endTime = end.atTime(LocalTime.MAX);
         query.setParameter("startDate", Timestamp.valueOf(startTime));
         query.setParameter("endDate", Timestamp.valueOf(endTime));
+        query.setParameter("userId", user.getUserId());
 
         List<Rental> results = query.getResultList();
 
