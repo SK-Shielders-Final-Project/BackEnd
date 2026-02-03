@@ -7,15 +7,20 @@ import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.PropertySource;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.security.Key;
-import java.security.KeyPair;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Date;
 import java.util.HashMap;
@@ -24,6 +29,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 @Component
+@PropertySource("classpath:jwt-keys.properties")
 public class JwtUtil implements Serializable {
 
     private static final long serialVersionUID = -2550185165626007488L;
@@ -34,6 +40,12 @@ public class JwtUtil implements Serializable {
     @Value("${jwt.refresh-expiration-ms}")
     private long jwtRefreshExpirationMs;
 
+    @Value("${jwt.private-key}")
+    private String privateKeyString;
+
+    @Value("${jwt.public-key}")
+    private String publicKeyString;
+
     private PrivateKey privateKey;
     private PublicKey publicKey;
     private String keyId;
@@ -42,11 +54,18 @@ public class JwtUtil implements Serializable {
      * RS256 알고리즘을 위한 RSA 키 쌍을 생성(운영X)
      */
     @PostConstruct
-    public void init() {
-        KeyPair keyPair = Keys.keyPairFor(SignatureAlgorithm.RS256);
-        this.privateKey = keyPair.getPrivate();
-        this.publicKey = keyPair.getPublic();
-        this.keyId = UUID.randomUUID().toString();
+    public void init() throws NoSuchAlgorithmException, InvalidKeySpecException {
+        KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+
+        byte[] privateKeyBytes = Base64.getDecoder().decode(privateKeyString);
+        PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privateKeyBytes);
+        this.privateKey = keyFactory.generatePrivate(privateKeySpec);
+
+        byte[] publicKeyBytes = Base64.getDecoder().decode(publicKeyString);
+        X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+        this.publicKey = keyFactory.generatePublic(publicKeySpec);
+
+        this.keyId = "a9a7a6c9-593c-4a3b-9a9c-0a4e7e6d6b6e";
     }
 
     /**
