@@ -142,25 +142,34 @@ public class UserAPIController {
      * @return
      */
     @PutMapping("/info")
-    public ResponseEntity<?> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request, HttpSession session) {
+    public ResponseEntity<?> updateUserInfo(
+            Principal principal,
+            @RequestBody UpdateUserInfoRequest request,
+            @RequestHeader(value = "User-Agent", defaultValue = "") String userAgent,
+            HttpSession session) {
         try {
-            // 1. 세션에서 개인키 가져오기
-            PrivateKey privateKey = (PrivateKey) session.getAttribute(SESSION_KEY_RSA);
-            if (privateKey == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("보안 세션이 만료되었습니다. 새로고침 해주세요.");
+            String rawPassword;
+
+            // User-Agent에 "Android"가 포함되어 있는지 확인
+            if (userAgent.contains("Android")) {
+                System.out.println("📱 안드로이드 요청 감지: 복호화를 진행합니다.");
+
+                PrivateKey privateKey = (PrivateKey) session.getAttribute(SESSION_KEY_RSA);
+                if (privateKey == null) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("보안 세션 만료");
+                }
+
+                Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+                cipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+                byte[] encryptedBytes = Base64.getDecoder().decode(request.getPassword());
+                byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+                rawPassword = new String(decryptedBytes, StandardCharsets.UTF_8);
+            } else {
+                System.out.println("💻 일반(Web/기타) 요청 감지: 평문 비밀번호를 사용합니다.");
+                // 안드로이드가 아니면 프론트에서 평문으로 보냈다고 가정
+                rawPassword = request.getPassword();
             }
-
-            // 2. 비밀번호 복호화
-            Cipher cipher = Cipher.getInstance("RSA");
-            cipher.init(Cipher.DECRYPT_MODE, privateKey);
-
-            byte[] encryptedBytes = Base64.getDecoder().decode(request.getPassword());
-            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
-
-            // 진짜 비밀번호 추출
-            String rawPassword = new String(decryptedBytes, StandardCharsets.UTF_8);
-
             // 3. 서비스 호출 (복호화된 비밀번호를 넘겨줌)
             User updatedUser = userService.updateUserInfo(principal.getName(), request, rawPassword);
             return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
