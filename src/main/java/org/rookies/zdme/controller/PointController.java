@@ -67,7 +67,7 @@ public class PointController {
             String encryptedResult = Base64.getEncoder().encodeToString(resultByte);
 
             return ResponseEntity.ok(GiftResponseDto.builder().encryptedResult(encryptedResult).build());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }
         catch (Exception e) {

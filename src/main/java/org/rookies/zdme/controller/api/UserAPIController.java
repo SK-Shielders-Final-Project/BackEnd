@@ -1,5 +1,6 @@
 package org.rookies.zdme.controller.api;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.*;
 import org.rookies.zdme.model.entity.User;
@@ -15,7 +16,11 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
+import javax.crypto.Cipher;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.security.PrivateKey;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -31,6 +36,7 @@ public class UserAPIController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private static final String SESSION_KEY_RSA = "RSA_PRIVATE_KEY";
 
     /**
      * 회원가입 (대량 할당 및 SQL 인젝션 등 취약점을 포함)
@@ -136,9 +142,27 @@ public class UserAPIController {
      * @return
      */
     @PutMapping("/info")
-    public ResponseEntity<?> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request) {
+    public ResponseEntity<?> updateUserInfo(Principal principal, @RequestBody UpdateUserInfoRequest request, HttpSession session) {
         try {
-            User updatedUser = userService.updateUserInfo(principal.getName(), request);
+            // 1. 세션에서 개인키 가져오기
+            PrivateKey privateKey = (PrivateKey) session.getAttribute(SESSION_KEY_RSA);
+            if (privateKey == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("보안 세션이 만료되었습니다. 새로고침 해주세요.");
+            }
+
+            // 2. 비밀번호 복호화
+            Cipher cipher = Cipher.getInstance("RSA");
+            cipher.init(Cipher.DECRYPT_MODE, privateKey);
+
+            byte[] encryptedBytes = Base64.getDecoder().decode(request.getPassword());
+            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
+
+            // 진짜 비밀번호 추출
+            String rawPassword = new String(decryptedBytes, StandardCharsets.UTF_8);
+
+            // 3. 서비스 호출 (복호화된 비밀번호를 넘겨줌)
+            User updatedUser = userService.updateUserInfo(principal.getName(), request, rawPassword);
             return ResponseEntity.ok(UserInfoPartialUpdateResponse.fromEntity(updatedUser));
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
