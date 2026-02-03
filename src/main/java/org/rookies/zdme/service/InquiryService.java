@@ -1,8 +1,11 @@
 package org.rookies.zdme.service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
-
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.rookies.zdme.dto.inquiry.*;
 import org.rookies.zdme.exception.ForbiddenException;
 import org.rookies.zdme.exception.NotFoundException;
@@ -25,13 +28,58 @@ public class InquiryService {
             InquiryRepository inquiryRepository,
             UserRepository userRepository,
             FileService fileService
-
     ) {
         this.inquiryRepository = inquiryRepository;
         this.userRepository = userRepository;
         this.fileService = fileService;
     }
 
+    /**
+     * [SSRF 취약 로직] 사용자가 입력한 URL의 메타데이터를 가져옵니다.
+     * 사설 IP(127.0.0.1, 192.168.x.x)나 클라우드 메타데이터 주소(169.254.169.254)에 대한
+     * 필터링이 전혀 없어 서버 권한으로 내부망을 공격할 수 있습니다.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, String> fetchFullScrapData(String targetUrl) {
+        Map<String, String> scrapData = new HashMap<>();
+
+        try {
+            Document doc = Jsoup.connect(targetUrl)
+                    .timeout(5000)
+                    .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36")
+                    .ignoreContentType(true)
+                    .get();
+
+            // 1. Title 추출
+            String title = doc.select("meta[property=og:title]").attr("content");
+            if (title.isEmpty()) title = doc.title();
+            scrapData.put("title", title);
+
+            // 2. Description 추출
+            String description = doc.select("meta[property=og:description]").attr("content");
+            if (description.isEmpty()) {
+                description = doc.select("meta[name=description]").attr("content");
+            }
+            if (description.isEmpty()) {
+                String bodyText = doc.body().text();
+                description = bodyText.length() > 200 ? bodyText.substring(0, 200) + "..." : bodyText;
+            }
+            scrapData.put("description", description);
+
+            // 3. Image 추출 (og:image) - 추가된 부분
+            String image = doc.select("meta[property=og:image]").attr("content");
+            scrapData.put("image", image); // 이미지가 없으면 빈 문자열이 들어감
+
+            // 4. URL 및 전체 본문 데이터
+            scrapData.put("url", targetUrl);
+            scrapData.put("content", doc.body().html());
+
+        } catch (Exception e) {
+            throw new RuntimeException("Scraping failed: " + e.getMessage());
+        }
+
+        return scrapData;
+    }
     @Transactional
     public InquiryResponse write(InquiryWriteRequest req) {
         if (req.getUser_id() == null) {
@@ -54,7 +102,7 @@ public class InquiryService {
                 .build();
 
         Inquiry saved = inquiryRepository.save(inquiry);
-        return toResponse(saved, 0); // adminLevel 기본값 0
+        return toResponse(saved, 0);
     }
 
     @Transactional(readOnly = true)
@@ -64,15 +112,15 @@ public class InquiryService {
         }
         List<Inquiry> list = inquiryRepository.findAllByUser_UserIdOrderByCreatedAtDesc(userId);
         return list.stream()
-                .map(inq -> toResponse(inq, 0)) // Default adminLevel
+                .map(inq -> toResponse(inq, 0))
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<InquiryResponse> listAllForAdmin(Integer adminLevel) { // adminId parameter removed
+    public List<InquiryResponse> listAllForAdmin(Integer adminLevel) {
         return inquiryRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
-                .map(inq -> toResponse(inq, adminLevel)) // adminLevel default to 0
+                .map(inq -> toResponse(inq, adminLevel))
                 .collect(Collectors.toList());
     }
 
@@ -83,7 +131,7 @@ public class InquiryService {
         }
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("Inquiry not found with id: " + inquiryId));
-        return toResponse(inquiry, adminLevel); // Assuming adminLevel is 0 for a standard response.
+        return toResponse(inquiry, adminLevel);
     }
 
     @Transactional(readOnly = true)
@@ -94,14 +142,14 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryResponse reply(Long inquiryId, String adminReply, Integer adminLevel) { // adminId parameter removed
+    public InquiryResponse reply(Long inquiryId, String adminReply, Integer adminLevel) {
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));
 
         inquiry.setAdminReply(adminReply);
         Inquiry saved = inquiryRepository.save(inquiry);
 
-        return toResponse(saved, adminLevel); // adminLevel default to 0
+        return toResponse(saved, adminLevel);
     }
 
     @Transactional
@@ -110,7 +158,6 @@ public class InquiryService {
         if (req.getUser_id() == null) throw new IllegalArgumentException("user_id is required");
         if (req.getInquiry_id() == null) throw new IllegalArgumentException("inquiry_id is required");
         if (req.getTitle() == null || req.getTitle().isBlank()) throw new IllegalArgumentException("title is required");
-        if (req.getContent() == null) req.setContent("");
 
         if (!inquiryRepository.existsByInquiryIdAndUser_UserId(req.getInquiry_id(), req.getUser_id())) {
             throw new ForbiddenException("You are not the owner of this inquiry.");
@@ -122,7 +169,6 @@ public class InquiryService {
         inquiry.setTitle(req.getTitle());
         inquiry.setContent(req.getContent());
 
-        // file_id 정책: null이면 제거, 값 있으면 교체
         if (req.getFile_id() == null) {
             inquiry.setFile(null);
         } else {
@@ -137,14 +183,11 @@ public class InquiryService {
                 .build();
     }
 
-    // InquiryService.java 수정안
     private InquiryResponse toResponse(Inquiry inq, Integer adminLevForResponse) {
         return InquiryResponse.builder()
                 .inquiry_id(inq.getInquiryId())
-                // 작성자(User)가 null인 경우를 대비해 안전하게 처리
                 .user_id(inq.getUser() != null ? inq.getUser().getUserId() : null)
                 .title(inq.getTitle())
-                // 파일(File)이 null인 경우를 대비해 안전하게 처리
                 .file_id(inq.getFile() != null ? inq.getFile().getFileId() : null)
                 .admin_level(adminLevForResponse != null ? adminLevForResponse : 0)
                 .admin_reply(inq.getAdminReply())
@@ -152,6 +195,7 @@ public class InquiryService {
                 .updated_at(inq.getUpdatedAt())
                 .build();
     }
+
     @Transactional
     public InquiryDeleteResponse deleteByUser(Long userId, Long inquiryId) {
         if (userId == null) throw new IllegalArgumentException("user_id is required");
@@ -172,10 +216,8 @@ public class InquiryService {
     }
 
     @Transactional
-    public InquiryDeleteResponse deleteByAdmin(Long inquiryId, Integer adminLevel) { // adminId parameter and validation removed
+    public InquiryDeleteResponse deleteByAdmin(Long inquiryId, Integer adminLevel) {
         if (inquiryId == null) throw new IllegalArgumentException("inquiry_id is required");
-
-        // TODO: Add business logic for adminLevel validation if needed
 
         Inquiry inquiry = inquiryRepository.findById(inquiryId)
                 .orElseThrow(() -> new NotFoundException("inquiry not found"));
@@ -187,4 +229,3 @@ public class InquiryService {
                 .build();
     }
 }
-

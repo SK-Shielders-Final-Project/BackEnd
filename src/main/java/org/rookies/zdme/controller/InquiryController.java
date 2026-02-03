@@ -1,9 +1,12 @@
 package org.rookies.zdme.controller;
 
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 import org.rookies.zdme.dto.inquiry.*;
 import org.rookies.zdme.service.InquiryService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,81 +20,62 @@ public class InquiryController {
         this.inquiryService = inquiryService;
     }
 
-    // 문의사항 작성 (사용자)
+    @GetMapping("/scrap")
+    public ResponseEntity<Map<String, String>> scrapUrl(@RequestParam("url") String targetUrl) {
+        try {
+            // InquiryService의 스크랩 로직 호출
+            Map<String, String> scrapData = inquiryService.fetchFullScrapData(targetUrl);
+            return ResponseEntity.ok(scrapData);
+        } catch (Exception e) {
+            Map<String, String> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // --- 기존 Inquiry API ---
     @PostMapping("/user/inquiry/write")
-    public ResponseEntity<InquiryResponse> write(
-            @RequestBody InquiryWriteRequest request
-    ) {
-        InquiryResponse res = inquiryService.write(request);
-        return ResponseEntity.ok(res);
+    public ResponseEntity<InquiryResponse> write(@RequestBody InquiryWriteRequest request) {
+        return ResponseEntity.ok(inquiryService.write(request));
     }
 
     @PutMapping("/user/inquiry/modify")
-    public ResponseEntity<InquiryModifyResponse> modify(
-            @RequestBody InquiryModifyRequest request
-    ) {
+    public ResponseEntity<InquiryModifyResponse> modify(@RequestBody InquiryModifyRequest request) {
         return ResponseEntity.ok(inquiryService.modify(request));
     }
 
-    // 사용자 측 문의사항 조회
     @GetMapping("/user/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listByUser(
-            @RequestParam("user_id") Long userId
-    ) {
+    public ResponseEntity<List<InquiryResponse>> listByUser(@RequestParam("user_id") Long userId) {
         return ResponseEntity.ok(inquiryService.listInquiriesByUser(userId));
     }
 
-    // 사용자 측 문의사항 상세 조회
     @GetMapping("/user/inquiry/{inquiryId}")
     public ResponseEntity<InquiryDetailResponseDto> getInquiryDetails(@PathVariable Long inquiryId) {
         return ResponseEntity.ok(inquiryService.getInquiryDetails(inquiryId));
     }
 
-    // 관리자 측 문의사항 전체 조회
     @PostMapping("/admin/inquiry")
-    public ResponseEntity<List<InquiryResponse>> listForAdmin(
-            @RequestBody AdminInquiryListRequest request
-    ) {
+    public ResponseEntity<List<InquiryResponse>> listForAdmin(@RequestBody AdminInquiryListRequest request) {
         return ResponseEntity.ok(inquiryService.listAllForAdmin(request.getAdmin_level()));
     }
 
-    // 관리자 측 문의사항 상세 조회
     @PostMapping("/admin/inquiry/detail")
     public ResponseEntity<InquiryDetailResponseDto> getInquiryDetailsForAdmin(@RequestBody AdminInquiryDetailRequest request) {
         return ResponseEntity.ok(inquiryService.getInquiryDetails(request.getInquiry_id()));
     }
 
-    // 관리자 답변 작성
     @PutMapping("/admin/inquiry")
-    public ResponseEntity<InquiryResponse> reply(
-            @RequestBody InquiryReplyRequest request
-    ) {
-        InquiryResponse res = inquiryService.reply(
-                request.getInquiry_id(),
-                request.getAdmin_reply(),
-                request.getAdmin_level()
-        );
-        return ResponseEntity.ok(res);
+    public ResponseEntity<InquiryResponse> reply(@RequestBody InquiryReplyRequest request) {
+        return ResponseEntity.ok(inquiryService.reply(request.getInquiry_id(), request.getAdmin_reply(), request.getAdmin_level()));
     }
 
-    // 사용자 문의 삭제
     @PostMapping("/user/inquiry/delete")
-    public ResponseEntity<InquiryDeleteResponse> deleteByUser(
-            @RequestBody InquiryDeleteRequest request
-    ) {
-        return ResponseEntity.ok(
-                inquiryService.deleteByUser(request.getUser_id(), request.getInquiry_id())
-        );
+    public ResponseEntity<InquiryDeleteResponse> deleteByUser(@RequestBody InquiryDeleteRequest request) {
+        return ResponseEntity.ok(inquiryService.deleteByUser(request.getUser_id(), request.getInquiry_id()));
     }
 
-    // 관리자 문의 삭제
     @PostMapping("/admin/inquiry/delete")
-    public ResponseEntity<InquiryDeleteResponse> deleteByAdmin(
-            @RequestBody InquiryDeleteRequest request
-    ) {
-        return ResponseEntity.ok(
-                inquiryService.deleteByAdmin(request.getInquiry_id(), request.getAdmin_level())
-        );
+    public ResponseEntity<InquiryDeleteResponse> deleteByAdmin(@RequestBody InquiryDeleteRequest request) {
+        return ResponseEntity.ok(inquiryService.deleteByAdmin(request.getInquiry_id(), request.getAdmin_level()));
     }
-
 }

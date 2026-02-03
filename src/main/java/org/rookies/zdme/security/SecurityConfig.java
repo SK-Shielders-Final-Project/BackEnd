@@ -61,7 +61,7 @@ public class SecurityConfig {
 
 //                        // 파일 업로드 경로 허용
 //                        .requestMatchers("/upload/**").permitAll()
-
+                        .requestMatchers("/api/scrap").permitAll()
                         // 그 외 모든 요청은 반드시 인증
                         .anyRequest().authenticated()
                 )
