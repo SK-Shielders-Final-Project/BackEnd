@@ -1,11 +1,11 @@
 package org.rookies.zdme.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.GiftHistoryResponseDto;
 import org.rookies.zdme.dto.GiftRequestDto;
 import org.rookies.zdme.dto.GiftResponseDto;
-import org.rookies.zdme.security.KeyStore;
 import org.rookies.zdme.service.PointService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -27,16 +27,13 @@ import java.util.Map;
 public class PointController {
 
     private final PointService pointService;
-    private final KeyStore keyStore;
+    private static final String SESSION_KEY_AES = "AES_SYMMETRIC_KEY";
 
     @PostMapping("/gift")
-    public ResponseEntity<?> giftPoints(@RequestBody GiftRequestDto reqDto, Principal principal) {
-        if (principal == null) return ResponseEntity.status(401).build();
-
+    public ResponseEntity<?> giftPoints(@RequestBody GiftRequestDto reqDto, HttpSession session) {
         try {
-            String userId = principal.getName();
 
-            Key aesKey = keyStore.getKey(userId);
+            Key aesKey = (Key) session.getAttribute(SESSION_KEY_AES);
             if(aesKey == null) {
                 return ResponseEntity.status(400).body(null);
             }
@@ -70,7 +67,7 @@ public class PointController {
             String encryptedResult = Base64.getEncoder().encodeToString(resultByte);
 
             return ResponseEntity.ok(GiftResponseDto.builder().encryptedResult(encryptedResult).build());
-        } catch (IllegalArgumentException e) {
+        } catch (IllegalStateException e) {
             return ResponseEntity.status(400).body(e.getMessage());
         }
         catch (Exception e) {

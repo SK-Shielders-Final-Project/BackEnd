@@ -3,10 +3,10 @@ package org.rookies.zdme.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.connector.Response;
 import org.rookies.zdme.dto.GiftRequestDto;
 import org.rookies.zdme.dto.GiftResponseDto;
 import org.rookies.zdme.dto.KeyExchangeRequestDto;
-import org.rookies.zdme.security.KeyStore;
 import org.rookies.zdme.service.PointService;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpStatus;
@@ -26,19 +26,12 @@ import java.util.Map;
 @RequestMapping("/api/user/crypto")
 public class CryptoController {
 
-    private static final Map<String, PrivateKey> privateKeyStore = new HashMap<>();
-    private final KeyStore keyStore;
+    private static final String SESSION_KEY_RSA = "RSA_PRIVATE_KEY";
+    private static final String SESSION_KEY_AES = "AES_SYMMETRIC_KEY";
 
-    // public key 생성
-    // 취약 버전 : userId에 비밀 키 값 저장
     @GetMapping("/public-key")
-    public ResponseEntity<?> generateKeyPair(Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
+    public ResponseEntity<?> generateKeyPair(HttpSession session) {
         try {
-            String userId = principal.getName();
-
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -46,7 +39,7 @@ public class CryptoController {
             PublicKey publicKey = keyPair.getPublic();
             PrivateKey privateKey = keyPair.getPrivate();
 
-            privateKeyStore.put(userId, privateKey);
+            session.setAttribute(SESSION_KEY_RSA, privateKey);
 
             String encodedPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
 
@@ -55,33 +48,30 @@ public class CryptoController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.internalServerError().build();
         }
     }
 
     @PostMapping("/exchange-key")
-    public ResponseEntity<?> exchangeKey(@RequestBody KeyExchangeRequestDto reqDto, Principal principal) {
-        if (principal == null) {
-            return ResponseEntity.status(401).body("로그인이 필요합니다.");
-        }
+    public ResponseEntity<?> exchangeKey(@RequestBody KeyExchangeRequestDto reqDto, HttpSession session) {
         try {
-            String userId = principal.getName();
-
-            PrivateKey privateKey = privateKeyStore.get(userId);
-
+            PrivateKey privateKey = (PrivateKey) session.getAttribute(SESSION_KEY_RSA);
             if (privateKey == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("키 교환 세션이 만료되었습니다.");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("키 교환 세션이 만료되었습니다. 페이지를 새로고침 해주세요.");
             }
 
+            // RSA 복호화 설정
             Cipher cipher = Cipher.getInstance("RSA");
             cipher.init(Cipher.DECRYPT_MODE, privateKey);
 
             byte[] encryptedBytes = Base64.getDecoder().decode(reqDto.getEncryptedSymmetricKey());
             byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
 
+            // 복호화된 바이트로 AES 키 생성
             Key aesKey = new SecretKeySpec(decryptedBytes, "AES");
 
-            keyStore.putKey(userId, aesKey);
+            session.setAttribute(SESSION_KEY_AES, aesKey);
 
             return ResponseEntity.ok("대칭키 교환 및 저장 완료");
         } catch (Exception e) {
@@ -90,22 +80,29 @@ public class CryptoController {
         }
     }
 
-    // 안전한 버전 : 기기 마다 (핸드세이크 기준)
+//    private static final Map<String, PrivateKey> privateKeyStore = new HashMap<>();
+//    private final KeyStore keyStore;
+//
+//    // public key 생성
+//    // 취약 버전 : userId에 비밀 키 값 저장
 //    @GetMapping("/public-key")
-//    public ResponseEntity<Map<String, String>> generateKeyPair(@RequestParam String handshakeId) {
-//        if (handshakeId == null || handshakeId.isEmpty()) {
-//            return ResponseEntity.badRequest().build();
+//    public ResponseEntity<?> generateKeyPair(Principal principal) {
+//        if (principal == null) {
+//            return ResponseEntity.status(401).build();
 //        }
-//
 //        try {
-//            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-//            keyGen.initialize(2048);
-//            KeyPair keyPair = keyGen.generateKeyPair();
+//            String userId = principal.getName();
 //
-//            // handshakeId로 하여 동시 접속 문제 해결
-//            privateKeyStore.put(handshakeId, keyPair.getPrivate());
+//            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+//            keyPairGenerator.initialize(2048);
+//            KeyPair keyPair = keyPairGenerator.generateKeyPair();
 //
-//            String encodedPublicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+//            PublicKey publicKey = keyPair.getPublic();
+//            PrivateKey privateKey = keyPair.getPrivate();
+//
+//            privateKeyStore.put(userId, privateKey);
+//
+//            String encodedPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
 //
 //            Map<String, String> response = new HashMap<>();
 //            response.put("publicKey", encodedPublicKey);
@@ -116,40 +113,34 @@ public class CryptoController {
 //        }
 //    }
 //
-//    /**
-//     * 2단계: 키 교환 (DTO에 deviceId 포함 필요)
-//     */
 //    @PostMapping("/exchange-key")
-//    public ResponseEntity<String> exchangeKey(@RequestBody KeyExchangeRequestDto request) {
+//    public ResponseEntity<?> exchangeKey(@RequestBody KeyExchangeRequestDto reqDto, Principal principal) {
+//        if (principal == null) {
+//            return ResponseEntity.status(401).body("로그인이 필요합니다.");
+//        }
 //        try {
-//            String deviceId = request.getHandshakeId(); // DTO에 필드 추가 필요
+//            String userId = principal.getName();
 //
-//            PrivateKey privateKey = privateKeyStore.get(deviceId);
+//            PrivateKey privateKey = privateKeyStore.get(userId);
+//
 //            if (privateKey == null) {
-//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("키가 만료되었습니다. 다시 시도해주세요.");
+//                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("키 교환 세션이 만료되었습니다.");
 //            }
 //
-//            Cipher cipher = Cipher.getInstance("RSA/ECB/PKCS1Padding");
+//            Cipher cipher = Cipher.getInstance("RSA");
 //            cipher.init(Cipher.DECRYPT_MODE, privateKey);
 //
-//            byte[] encryptedBytes = Base64.getDecoder().decode(request.getEncryptedSymmetricKey());
+//            byte[] encryptedBytes = Base64.getDecoder().decode(reqDto.getEncryptedSymmetricKey());
 //            byte[] decryptedBytes = cipher.doFinal(encryptedBytes);
 //
 //            Key aesKey = new SecretKeySpec(decryptedBytes, "AES");
 //
-//            // 최종 대칭키 저장 (이제 deviceId로 암호화 통신을 하게 됨)
-//            symmetricKeyStore.put(deviceId, aesKey);
+//            keyStore.putKey(userId, aesKey);
 //
-//            // 사용한 비대칭키 삭제
-//            privateKeyStore.remove(deviceId);
-//
-//            return ResponseEntity.ok("성공");
-//
+//            return ResponseEntity.ok("대칭키 교환 및 저장 완료");
 //        } catch (Exception e) {
 //            e.printStackTrace();
-//            return ResponseEntity.internalServerError().body("오류");
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("대칭키 교환 처리 중 오류 발생");
 //        }
 //    }
-
-
 }
