@@ -1,6 +1,7 @@
 package org.rookies.zdme.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.connector.Response;
@@ -29,9 +30,41 @@ public class CryptoController {
     private static final String SESSION_KEY_RSA = "RSA_PRIVATE_KEY";
     private static final String SESSION_KEY_AES = "AES_SYMMETRIC_KEY";
 
+//    @GetMapping("/public-key")
+//    public ResponseEntity<?> generateKeyPair(HttpSession session) {
+//        try {
+//            KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
+//            keyPairGenerator.initialize(2048);
+//            KeyPair keyPair = keyPairGenerator.generateKeyPair();
+//
+//            PublicKey publicKey = keyPair.getPublic();
+//            PrivateKey privateKey = keyPair.getPrivate();
+//
+//            session.setAttribute(SESSION_KEY_RSA, privateKey);
+//
+//            String encodedPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
+//
+//            Map<String, String> response = new HashMap<>();
+//            response.put("publicKey", encodedPublicKey);
+//
+//            return ResponseEntity.ok(response);
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.internalServerError().build();
+//        }
+//    }
+
     @GetMapping("/public-key")
-    public ResponseEntity<?> generateKeyPair(HttpSession session) {
+    public ResponseEntity<?> generateKeyPair(HttpServletRequest request) { 
         try {
+            HttpSession oldSession = request.getSession(false);
+            if (oldSession != null) {
+                oldSession.invalidate();
+                System.out.println("기존 세션 삭제 완료 (초기화)");
+            }
+
+            HttpSession newSession = request.getSession(true);
+
             KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA");
             keyPairGenerator.initialize(2048);
             KeyPair keyPair = keyPairGenerator.generateKeyPair();
@@ -39,7 +72,8 @@ public class CryptoController {
             PublicKey publicKey = keyPair.getPublic();
             PrivateKey privateKey = keyPair.getPrivate();
 
-            session.setAttribute(SESSION_KEY_RSA, privateKey);
+            // 4. [저장 단계] 아까 만든 '새로운 세션'에 저장
+            newSession.setAttribute(SESSION_KEY_RSA, privateKey);
 
             String encodedPublicKey = Base64.getEncoder().encodeToString(publicKey.getEncoded());
 
