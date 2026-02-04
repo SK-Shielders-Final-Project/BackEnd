@@ -71,7 +71,7 @@ public class PaymentService {
             Long approvedAmount = jsonNode.get("totalAmount").asLong();
             String actualMethod = jsonNode.get("method").asText();
 
-            if (!"카드".equalsIgnoreCase(actualMethod)) {
+            if (!("카드".equalsIgnoreCase(actualMethod) || "간편결제".equalsIgnoreCase(actualMethod))) {
                 throw new RuntimeException("허용되지 않은 결제 수단입니다. (결제 시도된 수단: " + actualMethod + ")");
             }
 
@@ -85,7 +85,7 @@ public class PaymentService {
                     .amount(approvedAmount)
                     .paymentKey(approvedKey)
                     .paymentStatus(Payment.PaymentStatus.DONE)
-                    .paymentMethod("카드")
+                    .paymentMethod(actualMethod)
                     .remainAmount(approvedAmount)
                     .build();
 

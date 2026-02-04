@@ -55,7 +55,7 @@ public class CryptoController {
 //    }
 
     @GetMapping("/public-key")
-    public ResponseEntity<?> generateKeyPair(HttpServletRequest request) { 
+    public ResponseEntity<?> generateKeyPair(HttpServletRequest request) {
         try {
             HttpSession oldSession = request.getSession(false);
             if (oldSession != null) {
