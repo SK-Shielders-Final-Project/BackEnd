@@ -44,7 +44,7 @@ public class RealLlmClient implements LlmClient {
 
             // 2. JSON 문자열 변환
             String jsonBody = objectMapper.writeValueAsString(payload);
-            System.out.println("🔥 [Native HttpClient] 전송 JSON: " + jsonBody);
+            System.out.println("ㅈㅈ 1ㅏㄷ🔥 [Native HttpClient] 전송 JSON: " + jsonBody);
 
             // 3. 요청 생성 (curl 명령어를 그대로 코드로 옮긴 형태)
             // 주의: baseUrl + "/api/generate" 경로가 정확한지 확인

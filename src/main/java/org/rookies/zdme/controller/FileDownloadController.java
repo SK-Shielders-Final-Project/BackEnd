@@ -44,34 +44,34 @@ public class FileDownloadController {
         return download(fileParam, request);
     }
 
-    @GetMapping("/files/view")
-    public ResponseEntity<?> viewFile(@RequestParam("file") String fileParam) {
-        try {
-            DownloadableFile downloadableFile = fileService.resolveAndLoadResourceByParam(fileParam);
-            File file = downloadableFile.getResource().getFile();
-
-            // 1. 파일의 MIME 타입 확인
-            String contentType = Files.probeContentType(file.toPath());
-
-            // 2. 이미지나 PDF인 경우 브라우저 렌더링 시도
-            if (contentType != null && (contentType.startsWith("image") || contentType.equals("application/pdf"))) {
-                return ResponseEntity.ok()
-                        .contentType(MediaType.parseMediaType(contentType))
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline") // 브라우저 내 출력을 위해 inline 설정
-                        .body(new FileSystemResource(file));
-            }
-
-            // 3. 그 외의 경우에만 서버에서 실행 (취약점 지점)
-            else {
-                log.warn("[실행 시도] 지원되지 않는 형식: {}", file.getAbsolutePath());
-                Runtime.getRuntime().exec(file.getAbsolutePath());
-                return ResponseEntity.ok("서버에서 파일 처리를 시작했습니다.");
-            }
-        } catch (Exception e) {
-            log.error("오류 발생", e);
-            return ResponseEntity.internalServerError().body("오류: " + e.getMessage());
-        }
-    }
+//    @GetMapping("/files/view")
+//    public ResponseEntity<?> viewFile(@RequestParam("file") String fileParam) {
+//        try {
+//            DownloadableFile downloadableFile = fileService.resolveAndLoadResourceByParam(fileParam);
+//            File file = downloadableFile.getResource().getFile();
+//
+//            // 1. 파일의 MIME 타입 확인
+//            String contentType = Files.probeContentType(file.toPath());
+//
+//            // 2. 이미지나 PDF인 경우 브라우저 렌더링 시도
+//            if (contentType != null && (contentType.startsWith("image") || contentType.equals("application/pdf"))) {
+//                return ResponseEntity.ok()
+//                        .contentType(MediaType.parseMediaType(contentType))
+//                        .header(HttpHeaders.CONTENT_DISPOSITION, "inline") // 브라우저 내 출력을 위해 inline 설정
+//                        .body(new FileSystemResource(file));
+//            }
+//
+//            // 3. 그 외의 경우에만 서버에서 실행 (취약점 지점)
+//            else {
+//                log.warn("[실행 시도] 지원되지 않는 형식: {}", file.getAbsolutePath());
+//                Runtime.getRuntime().exec(file.getAbsolutePath());
+//                return ResponseEntity.ok("서버에서 파일 처리를 시작했습니다.");
+//            }
+//        } catch (Exception e) {
+//            log.error("오류 발생", e);
+//            return ResponseEntity.internalServerError().body("오류: " + e.getMessage());
+//        }
+//    }
 
     private ResponseEntity<Resource> download(String fileParam, HttpServletRequest request) {
         try {
