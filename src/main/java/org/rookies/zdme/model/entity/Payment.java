@@ -44,6 +44,9 @@ public class Payment {
     @Column(length = 50)
     private String paymentMethod;
 
+    @Column(length = 255)
+    private String orderName;
+
     // toss 발급 결제 고유 키
     @Column(length = 100)
     private String paymentKey;

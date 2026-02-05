@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Receipt Preview</title>
+    <style>
+        body {
+            font-family: 'Malgun Gothic', 'Dotum', 'Apple SD Gothic Neo', sans-serif; /* More standard Korean font */
+            color: #222; /* Darker text for professionalism */
+            /* Removed background-color and margin from body as per request */
+        }
+        .receipt-container {
+            width: 300px;
+            margin: 0 auto; /* Centered, no external margin */
+            border: 1px solid #ddd; /* Subtle, solid border */
+            padding: 15px;
+            /* Removed box-shadow */
+            background-color: #fff;
+        }
+        .receipt-header, .receipt-item, .receipt-total {
+            margin-bottom: 8px;
+            white-space: pre-wrap;
+        }
+        .receipt-header {
+            text-align: center;
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid #222; /* Stronger separation */
+            color: #222; /* Official black/dark grey */
+        }
+        .receipt-item {
+            display: flex; /* Use flexbox for better alignment */
+            justify-content: space-between; /* Space out key and value */
+            margin-bottom: 5px;
+        }
+        .receipt-item span:first-child {
+            flex-basis: 45%; /* Adjust width for key */
+            text-align: left;
+            font-size: 0.9em;
+        }
+        .receipt-item span:last-child {
+            flex-basis: 50%; /* Adjust width for value */
+            text-align: right;
+            font-weight: 500;
+            font-size: 0.9em;
+        }
+        .receipt-total {
+            border-top: 1px dashed #aaa; /* Lighter dashed line */
+            padding-top: 10px;
+            margin-top: 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+        }
+        .receipt-total span:first-child {
+            font-size: 1em;
+        }
+        .receipt-total span:last-child {
+            font-size: 1.1em;
+        }
+        .receipt-memo {
+            border-top: 1px dashed #aaa; /* Lighter dashed line */
+            padding-top: 10px;
+            margin-top: 15px;
+            font-size: 0.9em; /* Slightly larger font for the label */
+            color: #222; /* Use standard text color */
+            text-align: left; /* Ensure the label is left-aligned */
+        }
+        .memo-content {
+            background-color: #fcfcfc; /* Very subtle background */
+            padding: 5px; /* Reduced padding */
+            border: 1px solid #eee; /* Very light border */
+            margin-top: 5px;
+            line-height: 1.4;
+            text-align: left; /* Ensure text starts from left */
+        }
+        .memo-content span { /* Style the span inside memo-content */
+            display: block; /* Make it a block element to fill width and start from top-left */
+            word-break: break-word; /* Ensure long words break */
+        }
+    </style>
+</head>
+<body>
+    <div class="receipt-container">
+        <div class="receipt-header">영수증</div>
+        <div class="receipt-item">
+            <span>상품명:</span>
+            <span th:text="${payment.orderName}">Sample Product</span>
+        </div>
+        <div class="receipt-item">
+            <span>결제 ID:</span>
+            <span th:text="${payment.paymentId}">1</span>
+        </div>
+        <div class="receipt-item">
+            <span>주문 번호:</span>
+            <span th:text="${payment.orderId}">ORDER12345</span>
+        </div>
+        <div class="receipt-item">
+            <span>결제 일시:</span>
+            <span th:text="${#temporals.format(payment.createdAt, 'yyyy-MM-dd HH:mm:ss')}">2023-10-26 14:30:00</span>
+        </div>
+        
+        <div class="receipt-total">
+            <span>총 결제 금액:</span>
+            <span th:text="${#numbers.formatCurrency(payment.amount)}">₩10,000</span>
+        </div>
+
+        <div class="receipt-memo">
+        <span style="font-size: small;">메모:</span>
+            <div class="memo-content" style="white-space: pre-wrap;">
+                <span th:text="${__${userMemo}__}"></span>
+            </div>
+        </div>
+
+
+        <div class="receipt-footer" style="text-align: center; margin-top: 15px;">
+            ZDME Bike Rental<br/>
+            이용해 주셔서 감사합니다.
+        </div>
+    </div>
+</body>
+</html>
