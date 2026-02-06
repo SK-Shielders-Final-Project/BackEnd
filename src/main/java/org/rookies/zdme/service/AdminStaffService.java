@@ -72,7 +72,7 @@ public class AdminStaffService {
     }
 
     private void validateAdminLev(Integer lev) {
-        if (lev < 2) throw new IllegalArgumentException("admin_level is required");
+
         if (lev < 0 || lev > 2) throw new IllegalArgumentException("admin_level must be 0, 1, or 2");
     }
 }
