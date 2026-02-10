@@ -5,7 +5,9 @@ import lombok.RequiredArgsConstructor;
 import org.rookies.zdme.dto.*;
 import org.rookies.zdme.model.entity.User;
 import org.rookies.zdme.security.JwtUtil;
+import org.rookies.zdme.service.SecurityService; // Import SecurityService
 import org.rookies.zdme.service.UserService;
+import org.springframework.http.HttpHeaders; // Import HttpHeaders
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -37,6 +39,7 @@ public class UserAPIController {
     private final UserService userService;
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
+    private final SecurityService securityService; // Inject SecurityService
     private static final String SESSION_KEY_RSA = "RSA_PRIVATE_KEY";
 
     /**
@@ -65,20 +68,37 @@ public class UserAPIController {
      * @throws Exception
      */
     @PostMapping("/auth/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody LoginRequest authenticationRequest) {
+    public ResponseEntity<?> createAuthenticationToken(
+            @RequestBody LoginRequest authenticationRequest,
+            @RequestHeader(value = "X-Device-Id", required = false) String deviceId,
+            @RequestHeader(value = "X-Integrity-Token", required = false) String integrityToken) {
         try {
+            // 1. 앱 여부 판단 (헤더가 둘 다 존재하면 앱으로 간주)
+            boolean isAppRequest = (deviceId != null && !deviceId.isEmpty())
+                    && (integrityToken != null && !integrityToken.isEmpty());
+
+            // 2. 앱인 경우에만 무결성 검증 수행
+            if (isAppRequest) {
+                // 검증 로직 수행 (실패 시 여기서만 401 리턴)
+                if (!securityService.validateIntegrityToken(integrityToken, deviceId)) {
+                    return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                            .body(Collections.singletonMap("error", "App integrity verification failed or token expired."));
+                }
+            }
+            // 3. 웹인 경우 (isAppRequest == false)는 위 if문을 건너뛰고 바로 로그인 진행
+
+            // --- 기존 로그인 로직 (공통) ---
             authenticate(authenticationRequest.getUsername(), authenticationRequest.getPassword());
             final UserDetails userDetails = userService.loadUserByUsername(authenticationRequest.getUsername());
             final String accessToken = jwtUtil.generateToken(userDetails);
             final String refreshToken = jwtUtil.generateRefreshToken(userDetails);
             userService.saveRefreshToken(userDetails.getUsername(), refreshToken);
             final Long userId = ((User) userDetails).getUserId();
+
             return ResponseEntity.ok(new LoginResponse(accessToken, refreshToken, userId));
         } catch (DisabledException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "사용자 계정이 비활성화되었습니다."));
-        } catch (UsernameNotFoundException e) { // For security, treat UsernameNotFound as invalid credentials
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "아이디 또는 비밀번호가 일치하지 않습니다."));
-        } catch (BadCredentialsException e) {
+        } catch (UsernameNotFoundException | BadCredentialsException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.singletonMap("error", "아이디 또는 비밀번호가 일치하지 않습니다."));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.singletonMap("error", "로그인 처리 중 오류가 발생했습니다."));

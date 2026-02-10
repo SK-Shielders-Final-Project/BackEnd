@@ -99,3 +99,15 @@ CREATE TABLE payments (
 -- 250126
 ALTER TABLE users DROP COLUMN card_number;
 ALTER TABLE users DROP COLUMN pass;
+
+-- 임시 보안 캐시 테이블 (Nonce 및 Integrity Token 저장)
+CREATE TABLE SECURITY_TEMP_CACHE (
+    CACHE_KEY     VARCHAR2(255) PRIMARY KEY,
+    CACHE_VALUE   VARCHAR2(255),
+    CREATED_AT    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    EXPIRES_AT    TIMESTAMP
+);
+
+-- 만료된 토큰이 조회되지 않도록 뷰 또는 함수를 통해 처리하는 것을 권장.
+-- (예: SELECT * FROM SECURITY_TEMP_CACHE WHERE EXPIRES_AT > CURRENT_TIMESTAMP)
+-- 실제 쿼리에서 EXPIRES_AT > CURRENT_TIMESTAMP 조건을 항상 사용하도록 서비스 로직에서 강제합니다.
