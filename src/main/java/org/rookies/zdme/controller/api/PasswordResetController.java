@@ -20,7 +20,7 @@ public class PasswordResetController {
 
     @PostMapping("/request")
     public ResponseEntity<Void> requestReset(HttpServletRequest request, @RequestBody ForgotPasswordRequest forgotPasswordRequest) {
-        String host = request.getHeader("Host");
+        String host = request.getServerName();
         boolean success = userService.requestPasswordReset(forgotPasswordRequest.getUsername(), forgotPasswordRequest.getEmail(), host);
         if (success) {
             return ResponseEntity.ok().build();

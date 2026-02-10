@@ -116,6 +116,7 @@ public class PaymentService {
         return payments.stream()
                 .map(p -> PaymentsDto.builder()
                         .orderId(p.getOrderId())
+                        .paymentId(p.getPaymentId())
                         .paymentKey(p.getPaymentKey())
                         .paymentMethod(p.getPaymentMethod())
                         .createAt(p.getCreatedAt())

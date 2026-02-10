@@ -31,10 +31,10 @@ public class AdminStaffController {
             @RequestBody StaffAdminLevelUpdateRequest request
     ) {
         String currentUsername = SecurityUtil.getCurrentUsername();
-        User currentUser = userRepository.findByUsername(currentUsername)
+        User reloadedCurrentUser = userRepository.findByUsername(currentUsername)
                 .orElseThrow(() -> new UsernameNotFoundException("사용자가 존재하지 않습니다: " + currentUsername));
 
-        if (currentUser.getAdminLevel() != 2) {
+        if (reloadedCurrentUser.getAdminLevel() != 2) {
             Map<String, String> errorResponse = new HashMap<>();
             errorResponse.put("error", "권한이 없습니다.");
             return new ResponseEntity<>(errorResponse, HttpStatus.FORBIDDEN);

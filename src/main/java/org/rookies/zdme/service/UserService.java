@@ -312,6 +312,67 @@ public class UserService implements UserDetailsService {
         return userInfo;
     }
 
+    public Map<String, Object> getUserInfoByUsername(String username) {
+        String sql = "SELECT user_id, username, name, password, email, phone, total_point, admin_level, created_at, updated_at FROM users WHERE username = '" + username + "'";
+        List<Object[]> result;
+        try {
+            result = entityManager.createNativeQuery(sql).getResultList();
+        } catch (Exception e) {
+            throw new RuntimeException("Error executing query: " + e.getMessage());
+        }
+
+        if (result.isEmpty()) {
+            throw new UsernameNotFoundException("User not found with username: " + username);
+        }
+
+        Object[] userData = result.get(0);
+        Map<String, Object> userInfo = new LinkedHashMap<>();
+        // Note: The order and type of columns depends on the actual table schema
+        userInfo.put("user_id", userData[0]);
+        userInfo.put("username", userData[1]);
+        userInfo.put("name", userData[2]);
+        userInfo.put("password", userData[3]);
+        userInfo.put("email", userData[4]);
+        userInfo.put("phone", userData[5]);
+        userInfo.put("total_point", userData[6]);
+        userInfo.put("admin_lev", userData[7]);
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        if (userData[8] != null) {
+            Object rawCreatedAt = userData[8];
+            LocalDateTime createdAt;
+            if (rawCreatedAt instanceof java.sql.Timestamp) {
+                createdAt = ((java.sql.Timestamp) rawCreatedAt).toLocalDateTime();
+            } else if (rawCreatedAt instanceof Number) {
+                createdAt = LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(((Number) rawCreatedAt).longValue()), java.time.ZoneId.systemDefault());
+            } else {
+                throw new RuntimeException("Cannot convert created_at of type " + rawCreatedAt.getClass().getName());
+            }
+            userInfo.put("created_at", createdAt.format(formatter));
+        }
+
+        if (userData[9] != null) {
+            Object rawUpdatedAt = userData[9];
+            LocalDateTime updatedAt;
+            if (rawUpdatedAt instanceof java.sql.Timestamp) {
+                updatedAt = ((java.sql.Timestamp) rawUpdatedAt).toLocalDateTime();
+            } else if (rawUpdatedAt instanceof Number) {
+                updatedAt = LocalDateTime.ofInstant(java.time.Instant.ofEpochSecond(((Number) rawUpdatedAt).longValue()), java.time.ZoneId.systemDefault());
+            } else {
+                updatedAt = null; // Or throw an exception, depending on expected behavior
+            }
+
+            if (updatedAt != null) {
+                userInfo.put("updated_at", updatedAt.format(formatter));
+            }
+        } else {
+            userInfo.put("updated_at", null);
+        }
+
+        return userInfo;
+    }
+
     public boolean verifyPassword(String username, String rawPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));

@@ -44,7 +44,7 @@ public class RealLlmClient implements LlmClient {
             payload.put("message", messageBody);
 
             String jsonBody = objectMapper.writeValueAsString(payload);
-            System.out.println("🔥 [Native HttpClient] 전송 JSON: " + jsonBody);
+            System.out.println("ㅈㅈ 1ㅏㄷ🔥 [Native HttpClient] 전송 JSON: " + jsonBody);
 
             // 2. 개별 요청 시 응답을 기다리는 시간(timeout)을 5분으로 설정
             HttpRequest httpRequest = HttpRequest.newBuilder()

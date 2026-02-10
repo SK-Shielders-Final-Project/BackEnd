@@ -13,8 +13,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.MalformedURLException;
 import java.nio.file.*;
-import java.nio.file.attribute.PosixFilePermission;
-import java.nio.file.attribute.PosixFilePermissions;
+// import java.nio.file.attribute.PosixFilePermission; // 사용 안 함
+// import java.nio.file.attribute.PosixFilePermissions; // 사용 안 함
 import java.time.LocalDate;
 import java.util.Locale;
 import java.util.Set;
@@ -60,11 +60,11 @@ public class FileService {
 
             // 가져온 데이터를 미리보기 화면에 텍스트로 렌더링
             return "<div class='render-result'>" +
-                   "  <h4>[변환 엔진 로그] 리소스 로드 성공</h4>" +
-                   "  <div style='background:#fff; border:1px solid #ddd; padding:10px;'>" +
-                   "    <pre style='white-space: pre-wrap;'>" + content.toString() + "</pre>" +
-                   "  </div>" +
-                   "</div>";
+                    "  <h4>[변환 엔진 로그] 리소스 로드 성공</h4>" +
+                    "  <div style='background:#fff; border:1px solid #ddd; padding:10px;'>" +
+                    "    <pre style='white-space: pre-wrap;'>" + content.toString() + "</pre>" +
+                    "  </div>" +
+                    "</div>";
 
         } catch (Exception e) {
             // 오류 발생 시에도 내부 에러 메시지가 노출될 수 있음 (정보 유출)
@@ -112,15 +112,9 @@ public class FileService {
             // 파일 물리적 저장
             multipartFile.transferTo(targetFile.toFile());
 
-            // ✅ 추가된 로직: 리눅스 환경에서 실행 권한(+x) 부여
-            try {
-                // 권한 설정: rwxr-xr-x (모든 사용자 읽기 및 실행 가능)
-                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwxr-xr-x");
-                Files.setPosixFilePermissions(targetFile, perms);
-            } catch (UnsupportedOperationException e) {
-                // 윈도우 등 POSIX를 지원하지 않는 OS일 경우의 Fallback
-                targetFile.toFile().setExecutable(true, false);
-            }
+            // ⚠️ [수정됨] 실행 권한(+x) 부여 로직 삭제
+            // 이전 코드에서는 setExecutable(true) 등을 수행했으나,
+            // 보안상 위험하므로 기본 파일 권한(644 등)을 따르도록 해당 블록을 제거했습니다.
 
         } catch (Exception e) {
             throw new BadRequestException("file save failed");
@@ -146,25 +140,16 @@ public class FileService {
     /**
      * Controller에서 전달받은 file 파라미터(상대 경로)를 사용하여
      * 실제 파일 리소스를 로드하고, 다운로드에 필요한 정보를 담은 객체를 반환합니다.
-     *
-     * @param fileParam Controller가 URL의 'file' 쿼리 파라미터로부터 받은 값
-     * @return 다운로드할 파일의 Resource와 원본 파일명을 포함하는 DownloadableFile 객체
      */
     @Transactional(readOnly = true)
     public DownloadableFile resolveAndLoadResourceByParam(String fileParam) {
         try {
-            // 1. fileParam을 사용하여 실제 파일 시스템으로부터 파일을 로드하고 Resource 객체로 변환합니다.
             Resource resource = loadAsResource(fileParam);
-
-            // 2. fileParam 경로에서 마지막 '/' 이후의 문자열을 추출하여 원본 파일명으로 사용합니다.
-            //    (실제 파일 시스템에 저장된 이름이 아닌, 다운로드 시 사용자에게 보여줄 이름)
             String originalFilename = fileParam;
             int lastSlash = fileParam.lastIndexOf('/');
             if (lastSlash >= 0 && lastSlash < fileParam.length() - 1) {
                 originalFilename = fileParam.substring(lastSlash + 1);
             }
-
-            // 3. Resource와 파일명을 담은 DTO(DownloadableFile)를 생성하여 반환합니다.
             return new DownloadableFile(resource, originalFilename);
         } catch (NotFoundException e) {
             throw new NotFoundException("File not found by path: " + fileParam, e);
@@ -173,38 +158,23 @@ public class FileService {
         }
     }
 
-    /**
-     * 주어진 파일 경로(상대 경로)를 기반으로 파일 시스템에서 실제 파일을 찾아
-     * Spring의 Resource 객체로 로드합니다.
-     *
-     * @param filePath 다운로드할 파일의 상대 경로 (e.g., "INQUIRY/20240131/some-file.txt")
-     * @return 파일 시스템의 파일을 가리키는 UrlResource 객체
-     */
     @Transactional(readOnly = true)
     public Resource loadAsResource(String filePath) {
-        // 1. 파일 경로가 유효한지 확인합니다.
         if (filePath == null || filePath.isBlank()) {
             throw new BadRequestException("file path required");
         }
 
-        // 2. 설정 파일(application.properties)에 정의된 기본 저장 위치(app.file.base-dir=upload)를 가져옵니다.
         Path baseDir = Paths.get(props.getBaseDir()).toAbsolutePath().normalize();
-        // 3. 기본 경로와 전달받은 상대 경로를 결합하여 파일의 전체 절대 경로를 생성합니다.
-        //    예: C:\\project\\upload + INQUIRY\20240131\file.txt -> C:\\project\\upload\INQUIRY\20240131\file.txt
         Path targetPath = baseDir.resolve(filePath).normalize();
 
         try {
-            // 4. 완성된 파일 경로(URI)를 기반으로 UrlResource 객체를 생성합니다.
             Resource resource = new UrlResource(targetPath.toUri());
-            // 5. 해당 경로에 파일이 실제로 존재하고 읽기 가능한지 확인한 후, 리소스를 반환합니다.
             if (resource.exists() && resource.isReadable()) {
                 return resource;
             } else {
-                // 파일이 없거나 읽을 수 없으면 예외를 발생시킵니다.
                 throw new NotFoundException("File not found on disk: " + filePath);
             }
         } catch (MalformedURLException e) {
-            // 파일 경로가 유효하지 않은 URL 형식일 경우 예외를 발생시킵니다.
             throw new BadRequestException("Invalid file URL for path: " + filePath);
         }
     }
@@ -217,16 +187,21 @@ public class FileService {
         String originalName = f.getOriginalFilename() == null ? "" : f.getOriginalFilename();
         String ext = extractExt(originalName).toLowerCase(Locale.ROOT);
 
-        // [확장자] 블랙리스트 검증
+        // [확장자] 블랙리스트 검증 (유지)
         java.util.List<String> blacklistedExt = java.util.List.of(
-                "jsp", "jspx", "php", "asp", "aspx", "exe", "bat", "py", "rb", "js", "html", "htm"
+                "jsp", "jspx", "php", "asp", "aspx", "exe", "bat", "py", "rb", "js", "html", "htm", "sh"
         );
 
-        if (blacklistedExt.contains(ext)) {
-            throw new BadRequestException("UPLOAD BLOCKED" + ext);
+        // ⚠️ Null Byte Injection 취약점 허용 코드 (유지)
+        // contains() 대신 endsWith()를 사용했지만, 입력값에 대한 Sanitizing(널 바이트 제거)이 없음.
+        boolean isDangerous = blacklistedExt.stream()
+                .anyMatch(blocked -> originalName.toLowerCase().endsWith("." + blocked));
+
+        if (isDangerous) {
+            throw new BadRequestException("UPLOAD BLOCKED " + ext);
         }
 
-        // [Content-Type] 화이트리스트 검증
+        // [Content-Type] 화이트리스트 검증 (유지)
         String contentType = f.getContentType();
         if (contentType == null) {
             throw new BadRequestException("UPLOAD BLOCKED");
@@ -241,9 +216,7 @@ public class FileService {
                 "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         );
 
-        boolean isAllowedType = allowedContentTypes.contains(contentType);
-
-        if (!isAllowedType) {
+        if (!allowedContentTypes.contains(contentType)) {
             throw new BadRequestException("허용되지 않는 파일 형식(Content-Type)입니다: " + contentType);
         }
     }

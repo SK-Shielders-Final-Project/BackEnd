@@ -12,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
@@ -84,15 +85,20 @@ public class UserAPIController {
         }
     }
 
-    /**
-     * 회원정보 조회
-     * @param userId
-     * @return
-     */
-    @GetMapping("/info/{user_id}")
-    public ResponseEntity<Map<String, Object>> getUserInfo(@PathVariable("user_id") Long userId) {
+    @GetMapping("/info") // URL에 ID를 노출하지 않습니다.
+    public ResponseEntity<Map<String, Object>> getUserInfo(@AuthenticationPrincipal UserDetails userDetails) {
         try {
-            Map<String, Object> userInfo = userService.getUserInfo(userId);
+            if (userDetails == null) {
+                throw new UsernameNotFoundException("인증된 사용자 정보가 없습니다.");
+            }
+
+            // 토큰에 저장된 ID(혹은 username)를 가져옵니다.
+            // 서비스 로직에 따라 username으로 조회하거나, ID로 조회하도록 변경해야 합니다.
+            String username = userDetails.getUsername();
+
+            // 예: username(ID)을 통해 DB에서 상세 정보를 조회
+            Map<String, Object> userInfo = userService.getUserInfoByUsername(username);
+
             return new ResponseEntity<>(userInfo, HttpStatus.OK);
         } catch (UsernameNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.singletonMap("error", e.getMessage()));
