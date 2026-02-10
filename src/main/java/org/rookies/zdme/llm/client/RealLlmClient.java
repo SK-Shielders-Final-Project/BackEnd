@@ -28,7 +28,7 @@ public class RealLlmClient implements LlmClient {
         // 1. HttpClient 생성 시 연결 타임아웃을 5분으로 설정
         this.httpClient = HttpClient.newBuilder()
                 .version(HttpClient.Version.HTTP_1_1)
-                .connectTimeout(Duration.ofMinutes(5))
+                .connectTimeout(Duration.ofMinutes(50))
                 .build();
     }
 
