@@ -9,7 +9,7 @@ public class SecurityConstants {
             "/api/.well-known/jwks.json",
             "/api/auth/password-reset/**",
             "/api/auth/refresh",
-            "/security/**", // New security endpoints for nonce and integrity verification
+            "/api/security/**", // New security endpoints for nonce and integrity verification
             "/api/map/bikes-nearby", // 자전거 위치 정보 API 허용
             "/error"
     };
