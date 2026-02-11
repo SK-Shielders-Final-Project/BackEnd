@@ -9,7 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/security")
+@RequestMapping("/api/security")
 public class SecurityController {
 
     private final SecurityService securityService;
