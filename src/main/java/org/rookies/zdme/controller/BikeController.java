@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.rookies.zdme.dto.bike.BikeListRequest;
 import org.rookies.zdme.dto.bike.BikeResponse;
+import org.rookies.zdme.dto.bike.BikeRentalRequestDto;
 import org.rookies.zdme.dto.bike.BikeReturnRequestDto; // BikeReturnRequestDto 임포트 추가
 import org.rookies.zdme.dto.bike.BikeReturnResponseDto; // BikeReturnResponseDto 임포트 추가
 import org.rookies.zdme.service.BikeService;
@@ -39,6 +40,16 @@ public class BikeController {
         return ResponseEntity.ok(
                 bikeService.updateStatus(request.getBike_id(), request.getStatus())
         );
+    }
+
+    @PostMapping("/bike/rental")
+    public ResponseEntity<String> rentalBike(@RequestBody BikeRentalRequestDto requestDto) {
+        try {
+            bikeService.rentBike(requestDto.getSerialNumber());
+            return ResponseEntity.ok("Y");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("N");
+        }
     }
 
     @PostMapping("/bikes/return")

@@ -61,6 +61,23 @@ public class BikeService {
     }
 
     @Transactional
+    public void rentBike(String serialNumber) {
+        Bike bike = bikeRepository.findBySerialNumber(serialNumber)
+                .orElseThrow(() -> new NotFoundException("해당 시리얼 넘버의 자전거를 찾을 수 없습니다."));
+
+        switch (bike.getStatus()) {
+            case AVAILABLE:
+                bike.setStatus(BikeStatus.IN_USE);
+                bikeRepository.save(bike);
+                break;
+            case REPAIRING:
+                throw new BadRequestException("현재 수리중인 자전거는 대여할 수 없습니다.");
+            case IN_USE:
+                throw new BadRequestException("이미 사용중인 자전거입니다.");
+        }
+    }
+
+    @Transactional
     public BikeReturnResponseDto returnBike(BikeReturnRequestDto requestDto) {
         // 1. 자전거 조회
         Bike bike = bikeRepository.findBySerialNumber(requestDto.getSerialNumber())
